@@ -1,17 +1,9 @@
-// calculateTotal.js
 const { normalize, PRODUCTS, EXTRAS, DELIVERY_FEE, FREE_DELIVERY_THRESHOLD } = require('./catalog');
 
 /**
- * items: [
- *   {
- *     name: "Cheddar Bacon",
- *     quantity: 1,
- *     modifications: ["sin cebolla"],   // gratis, no afectan al precio
- *     extras: ["extra bacon", "cambio patatas gajo"]  // pueden tener coste
- *   },
- *   ...
- * ]
- * service_type: "delivery" | "pickup"
+ * calculateTotal підтримує два формати items:
+ * 1) ["Cheddar Bacon", "Pantera Negra"]
+ * 2) [{ name: "Cheddar Bacon", quantity: 1, extras: [] }]
  */
 function calculateTotal({ service_type, items }) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -24,19 +16,28 @@ function calculateTotal({ service_type, items }) {
   let subtotal = 0;
 
   for (const rawItem of items) {
-    const key = normalize(rawItem.name);
-    const qty = Number(rawItem.quantity) > 0 ? Number(rawItem.quantity) : 1;
+    // Якщо Happ надсилає рядок "Cheddar Bacon" замість об'єкта
+    const itemName = typeof rawItem === 'string' ? rawItem : rawItem.name;
+    const qty = (typeof rawItem === 'object' && Number(rawItem.quantity) > 0) ? Number(rawItem.quantity) : 1;
+    const itemExtras = (typeof rawItem === 'object' && Array.isArray(rawItem.extras)) ? rawItem.extras : [];
+    const itemModifications = (typeof rawItem === 'object' && Array.isArray(rawItem.modifications)) ? rawItem.modifications : [];
+
+    if (!itemName) {
+      continue;
+    }
+
+    const key = normalize(itemName);
     const basePrice = PRODUCTS[key];
 
     if (basePrice === undefined) {
-      unknownItems.push(rawItem.name);
-      continue; // no lo sumamos: mejor que el agente lo derive a redirect() antes que inventar un precio
+      unknownItems.push(itemName);
+      continue;
     }
 
     let lineExtrasTotal = 0;
     const appliedExtras = [];
 
-    for (const extraRaw of rawItem.extras || []) {
+    for (const extraRaw of itemExtras) {
       const extraKey = normalize(extraRaw);
       const extraPrice = EXTRAS[extraKey];
       if (extraPrice === undefined) {
@@ -51,10 +52,10 @@ function calculateTotal({ service_type, items }) {
     subtotal += lineTotal;
 
     lines.push({
-      name: rawItem.name,
+      name: itemName,
       quantity: qty,
       base_price: basePrice,
-      modifications: rawItem.modifications || [], // gratis, solo informativo
+      modifications: itemModifications,
       extras: appliedExtras,
       line_total: round2(lineTotal),
     });
@@ -71,22 +72,22 @@ function calculateTotal({ service_type, items }) {
   subtotal = round2(subtotal);
 
   let deliveryFee = 0;
-  if (service_type === 'delivery') {
+  const st = String(service_type || 'pickup').toLowerCase();
+  if (st === 'delivery') {
     deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   }
-  // pickup: sin coste de envío
 
   const total = round2(subtotal + deliveryFee);
 
   return {
-    service_type: service_type || 'pickup',
+    service_type: st,
     lines,
     subtotal,
     delivery_fee: deliveryFee,
     free_delivery_threshold: FREE_DELIVERY_THRESHOLD,
     total,
-    unknown_items: unknownItems,   // si no está vacío, el agente debe usar redirect()
-    unknown_extras: unknownExtras, // idem
+    unknown_items: unknownItems,
+    unknown_extras: unknownExtras,
   };
 }
 
