@@ -12,19 +12,16 @@ app.use((req, res, next) => {
 
 app.post('/tools/calculate-total', (req, res) => {
   try {
-    // 1. ВИВЕДЕМО В ЛОГИ ТЕ, ЩО ПРИСЛАВ HAPP AI
     console.log('=== ДАНІ ВІД HAPP AI ===');
     console.log(JSON.stringify(req.body, null, 2));
 
-    const params = req.body.parameters || req.body.arguments || req.body.args || req.body;[cite: 3]
+    const params = req.body.parameters || req.body.arguments || req.body.args || req.body;
 
-    // 2. РАХУЄМО СУМУ
     const result = calculateTotal({
-      service_type: params.service_type || 'delivery',[cite: 1]
-      items: params.items || [],[cite: 1]
+      service_type: params.service_type || 'delivery',
+      items: params.items || [],
     });
 
-    // 3. ВИВЕДЕМО В ЛОГИ РЕЗУЛЬТАТ РОЗРАХУНКУ
     console.log('=== РЕЗУЛЬТАТ РОЗРАХУНКУ ===');
     console.log(JSON.stringify(result, null, 2));
 
@@ -33,8 +30,19 @@ app.post('/tools/calculate-total', (req, res) => {
       ...result,
     });
   } catch (err) {
-    console.error('Помилка в /tools/calculate-total:', err);[cite: 3]
+    console.error('Помилка в /tools/calculate-total:', err);
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/webhook/order-confirmed', async (req, res) => {
+  try {
+    const order = req.body;
+    console.log('Pedido confirmado recibido:', JSON.stringify(order, null, 2));
+    return res.status(200).json({ success: true, received: true });
+  } catch (err) {
+    console.error('Error en /webhook/order-confirmed:', err);
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
@@ -43,6 +51,9 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
+});
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
