@@ -1,0 +1,13 @@
+{
+  "name": "mumu-grill-order-server",
+  "version": "1.0.0",
+  "description": "Servidor de cálculo de totales y pedidos para el agente de voz de MU-MU GRILL en Happ AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}
