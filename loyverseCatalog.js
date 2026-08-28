@@ -36,6 +36,21 @@ const VARIANT_IDS = {
 
   tartaleta_de_manzana: 'd79e430f-acdb-4ce3-b0bb-650fbbd50eb6',
   brownie_con_nueces: '3797228d-9302-486a-b854-239824e33772',
+
+  // Pizzas
+  margherita: '7a8bd0dc-4728-4827-99cc-4a1485c1cc61',
+  prosciutto_funghi: '76e0714d-bc4d-4a12-a3a8-7e4926df84c2',
+  di_parma: '4117ec8a-a05d-4c1b-be54-544607fbf3fe',
+  tonno_e_cipolla: '6ce5e893-ea05-4c6e-aa71-f09b03d3514e',
+  pepperoni: '815eac1b-288b-42b7-86ca-78129710e073', // antes "Diavola", renombrado en Loyverse
+  pizza_bbq: '159ef4da-e287-45c5-b693-861064f12d60',
+  quattro_formaggi: '9f0fcbe4-a1a9-4a91-8c6c-b36c0c9a272a',
+  chicken_pesto: '93f968ac-5bbd-4e7d-9729-4c6a46342d72',
+  huerta_de_la_nonna: 'a484b51e-32de-4be4-ad2d-40d9373a79d3',
+
+  // Otros
+  nuggets_de_pollo: '3d51843f-940c-4d27-b9fc-3cc9b74f8d6d',
+  croquetas_de_jamon: '8f17d632-61c6-4ab5-b062-a5f193fc84f8',
 };
 
 // Producto especial: coste de envío como línea propia del pedido
@@ -77,6 +92,10 @@ const FREE_MODIFIER_OPTION_IDS = {
   sin_lechuga: '65531cbd-7ede-454b-96c8-3b8752f606b0',
   sin_bacon: 'd76f40b0-d111-4991-8af1-d14f6735e952',
   sin_rucula: '22623664-f0de-4fc7-888a-c89e871aaeb3',
+  sin_salsa_de_tomate: 'ed17d2d1-1134-422a-acbf-a05debba22a1',
+  sin_champinones: 'dd457440-304c-4046-bb1a-9063757a8f72',
+  sin_queso_azul: '7fa16cd2-adfa-4af3-a4c9-b6a10b6d8753',
+  sin_berenjenas: '4145d597-8170-44a2-8f8d-68181b5ee757',
 };
 
 // --- Punto de la carne (sin coste) ---
