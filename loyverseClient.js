@@ -2,6 +2,7 @@
 const { resolveProductKey, resolveExtraKey, resolveCompoundName, toArray } = require('./catalog');
 const {
   STORE_ID,
+  POS_DEVICE_ID,
   VARIANT_IDS,
   DELIVERY_FEE_VARIANT_ID,
   POTATO_SWAP_VARIANT_ID,
@@ -108,6 +109,7 @@ function buildReceiptPayload(order) {
 
   const payload = {
     store_id: STORE_ID,
+    pos_device_id: POS_DEVICE_ID,
     source: 'Happ Voice Agent',
     note: buildNote(order),
     line_items: lineItems,
