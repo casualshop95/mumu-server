@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { calculateTotal } = require('./calculateTotal');
+const { createLoyverseReceipt } = require('./loyverseClient');
 
 const app = express();
 app.use(express.json());
@@ -16,7 +17,6 @@ app.post('/tools/calculate-total', (req, res) => {
     console.log(JSON.stringify(req.body, null, 2));
 
     const params = req.body.parameters || req.body.arguments || req.body.args || req.body;
-
     const result = calculateTotal({
       service_type: params.service_type || 'delivery',
       items: params.items || [],
@@ -37,12 +37,32 @@ app.post('/tools/calculate-total', (req, res) => {
 
 app.post('/webhook/order-confirmed', async (req, res) => {
   try {
-    const order = req.body;
-    console.log('Pedido confirmado recibido:', JSON.stringify(order, null, 2));
-    return res.status(200).json({ success: true, received: true });
+    const order = req.body.parameters || req.body.arguments || req.body.args || req.body;
+    console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ ===');
+    console.log(JSON.stringify(order, null, 2));
+
+    const accessToken = process.env.LOYVERSE_ACCESS_TOKEN;
+    if (!accessToken) {
+      console.error('Falta LOYVERSE_ACCESS_TOKEN en las variables de entorno.');
+      return res.status(200).json({ success: false, error: 'MISSING_LOYVERSE_TOKEN' });
+    }
+
+    const result = await createLoyverseReceipt(order, accessToken);
+
+    if (!result.success) {
+      console.error('Error creando el recibo en Loyverse:', result);
+      return res.status(200).json({ success: false, ...result });
+    }
+
+    console.log('Recibo creado en Loyverse:', result.receipt.receipt_number);
+    return res.status(200).json({
+      success: true,
+      receipt_number: result.receipt.receipt_number,
+      unmatched_items: result.notFound || [],
+    });
   } catch (err) {
     console.error('Error en /webhook/order-confirmed:', err);
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
