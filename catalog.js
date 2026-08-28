@@ -238,6 +238,49 @@ function toArray(value) {
   return [];
 }
 
+/**
+ * Happ AI, en la práctica, no envía cada item de "items" como un objeto JSON
+ * {name, quantity, modifications, extras} — a pesar de que así está configurado
+ * el esquema del tool en su panel — sino como UN SOLO STRING con los 4 valores
+ * unidos por comas, en este orden: "name,quantity,modifications,extras".
+ * Ejemplos reales observados:
+ *   "BBQ,1,,"
+ *   "Mr Classic,1,,extra bacon"
+ *   "Tartaleta de Manzana,1,,"
+ *
+ * Esta función acepta AMBOS formatos (string "CSV" u objeto ya estructurado)
+ * para no depender de que Happ no cambie este comportamiento en el futuro.
+ */
+function parseItemEntry(raw) {
+  if (raw && typeof raw === 'object') {
+    // Ya viene como objeto — se usa tal cual.
+    return {
+      name: raw.name,
+      quantity: raw.quantity,
+      modifications: raw.modifications,
+      extras: raw.extras,
+    };
+  }
+
+  if (typeof raw === 'string') {
+    const parts = raw.split(',');
+    const name = (parts[0] || '').trim();
+    const quantity = parseInt(parts[1], 10) || 1;
+    const modifications = parts[2] !== undefined ? parts[2].trim() : '';
+    // Todo lo que quede después del 3er valor se reagrupa como "extras",
+    // por si el campo de modificaciones tuviera alguna coma interna inesperada.
+    const extras = parts.length > 3 ? parts.slice(3).join(',').trim() : '';
+    return { name, quantity, modifications, extras };
+  }
+
+  return { name: undefined, quantity: 1, modifications: '', extras: '' };
+}
+
+function parseItemsList(rawItems) {
+  if (!Array.isArray(rawItems)) return [];
+  return rawItems.map(parseItemEntry);
+}
+
 module.exports = {
   normalize,
   PRODUCTS,
@@ -250,4 +293,6 @@ module.exports = {
   resolveExtraKey,
   resolveCompoundName,
   toArray,
+  parseItemEntry,
+  parseItemsList,
 };
