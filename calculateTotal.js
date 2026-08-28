@@ -7,6 +7,7 @@ const {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  toArray,
 } = require('./catalog');
 
 /**
@@ -57,7 +58,7 @@ function calculateTotal({ service_type, items }) {
     const appliedExtras = [];
 
     // Extras que ya venían separados en rawItem.extras
-    for (const extraRaw of rawItem.extras || []) {
+    for (const extraRaw of toArray(rawItem.extras)) {
       const extraKey = resolveExtraKey(extraRaw);
       if (!extraKey) {
         unknownExtras.push(extraRaw);
@@ -81,7 +82,7 @@ function calculateTotal({ service_type, items }) {
       product_key: productKey,
       quantity: qty,
       base_price: basePrice,
-      modifications: rawItem.modifications || [], // gratis, solo informativo
+      modifications: toArray(rawItem.modifications), // gratis, solo informativo
       extras: appliedExtras,
       line_total: round2(lineTotal),
     });
