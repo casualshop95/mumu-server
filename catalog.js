@@ -82,6 +82,9 @@ const PRODUCT_SYNONYMS = {
   smoked_bbq_burger: 'smoked_bbq',
   bbq_burger: 'smoked_bbq',
 
+  bbq_pizza: 'pizza_bbq',
+  pizza_de_bbq: 'pizza_bbq',
+
   cosa_nostra_burger: 'cosa_nostra',
 
   el_pastor_burger: 'el_pastor',
