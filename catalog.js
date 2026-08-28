@@ -84,6 +84,8 @@ const PRODUCT_SYNONYMS = {
 
   bbq_pizza: 'pizza_bbq',
   pizza_de_bbq: 'pizza_bbq',
+  pizza_barbacoa: 'pizza_bbq',
+  barbacoa: 'pizza_bbq', // sin ambigüedad: la hamburguesa se llama "Smoked BBQ", nunca "Barbacoa"
 
   cosa_nostra_burger: 'cosa_nostra',
 
@@ -239,18 +241,31 @@ function toArray(value) {
 }
 
 /**
- * Happ AI, en la práctica, no envía cada item de "items" como un objeto JSON
- * {name, quantity, modifications, extras} — a pesar de que así está configurado
- * el esquema del tool en su panel — sino como UN SOLO STRING con los 4 valores
- * unidos por comas, en este orden: "name,quantity,modifications,extras".
- * Ejemplos reales observados:
- *   "BBQ,1,,"
- *   "Mr Classic,1,,extra bacon"
- *   "Tartaleta de Manzana,1,,"
+ * Happ AI, en la práctica, no envía cada item de "items" de forma consistente
+ * a pesar de que el esquema del tool está definido como Object con propiedades
+ * (name, quantity, modifications, extras) en su panel. Se han observado AL MENOS
+ * dos formatos distintos para el mismo tool, en llamadas distintas:
  *
- * Esta función acepta AMBOS formatos (string "CSV" u objeto ya estructurado)
- * para no depender de que Happ no cambie este comportamiento en el futuro.
+ *   Formato "CSV plano":     "Mr Classic,1,,extra bacon"
+ *   Formato "con etiquetas": "Mr Classic, quantity: 1, modifications: , extras: extra bacon"
+ *
+ * Esta función soporta AMBOS formatos (y objetos ya estructurados), detectando
+ * etiquetas reconocidas ("quantity:", "modifications:", "extras:", "name:") en
+ * cualquier posición y usando reglas posicionales solo como respaldo cuando
+ * una parte no lleva etiqueta.
  */
+const ITEM_FIELD_LABELS = {
+  name: 'name',
+  quantity: 'quantity',
+  qty: 'quantity',
+  cantidad: 'quantity',
+  modifications: 'modifications',
+  modification: 'modifications',
+  modificaciones: 'modifications',
+  extras: 'extras',
+  extra: 'extras',
+};
+
 function parseItemEntry(raw) {
   if (raw && typeof raw === 'object') {
     // Ya viene como objeto — se usa tal cual.
@@ -262,18 +277,58 @@ function parseItemEntry(raw) {
     };
   }
 
-  if (typeof raw === 'string') {
-    const parts = raw.split(',');
-    const name = (parts[0] || '').trim();
-    const quantity = parseInt(parts[1], 10) || 1;
-    const modifications = parts[2] !== undefined ? parts[2].trim() : '';
-    // Todo lo que quede después del 3er valor se reagrupa como "extras",
-    // por si el campo de modificaciones tuviera alguna coma interna inesperada.
-    const extras = parts.length > 3 ? parts.slice(3).join(',').trim() : '';
-    return { name, quantity, modifications, extras };
+  if (typeof raw !== 'string') {
+    return { name: undefined, quantity: 1, modifications: '', extras: '' };
   }
 
-  return { name: undefined, quantity: 1, modifications: '', extras: '' };
+  const rawParts = raw.split(',').map((p) => p.trim());
+  const fields = {};
+  const unlabeled = [];
+  let lastLabel = null;
+
+  for (const part of rawParts) {
+    const colonIdx = part.indexOf(':');
+    const rawLabel = colonIdx > -1 ? part.slice(0, colonIdx).trim().toLowerCase() : null;
+    const mappedLabel = rawLabel ? ITEM_FIELD_LABELS[rawLabel] : undefined;
+
+    if (mappedLabel) {
+      fields[mappedLabel] = part.slice(colonIdx + 1).trim();
+      lastLabel = mappedLabel;
+      continue;
+    }
+
+    // Sin etiqueta reconocida: si la parte anterior era "modifications" o "extras"
+    // (que pueden tener varios valores separados por coma), se trata como
+    // continuación de esa misma lista en vez de un campo nuevo.
+    if (lastLabel === 'modifications' || lastLabel === 'extras') {
+      fields[lastLabel] = fields[lastLabel] ? `${fields[lastLabel]},${part}` : part;
+    } else {
+      unlabeled.push(part);
+      lastLabel = null;
+    }
+  }
+
+  // Rellena con reglas posicionales cualquier campo que no vino etiquetado.
+  if (fields.name === undefined) {
+    fields.name = unlabeled.length > 0 ? unlabeled.shift() : undefined;
+  }
+  if (fields.quantity === undefined) {
+    const numIdx = unlabeled.findIndex((p) => /^\d+$/.test(p));
+    if (numIdx > -1) fields.quantity = unlabeled.splice(numIdx, 1)[0];
+  }
+  if (fields.modifications === undefined && unlabeled.length > 0) {
+    fields.modifications = unlabeled.shift();
+  }
+  if (fields.extras === undefined && unlabeled.length > 0) {
+    fields.extras = unlabeled.join(',');
+  }
+
+  return {
+    name: (fields.name || '').trim(),
+    quantity: parseInt(fields.quantity, 10) || 1,
+    modifications: (fields.modifications || '').trim(),
+    extras: (fields.extras || '').trim(),
+  };
 }
 
 function parseItemsList(rawItems) {
