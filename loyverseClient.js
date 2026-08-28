@@ -1,5 +1,5 @@
 // loyverseClient.js
-const { resolveProductKey, resolveExtraKey, resolveCompoundName } = require('./catalog');
+const { resolveProductKey, resolveExtraKey, resolveCompoundName, toArray } = require('./catalog');
 const {
   STORE_ID,
   VARIANT_IDS,
@@ -51,9 +51,11 @@ function buildReceiptPayload(order) {
     }
 
     const lineModifiers = [];
+    const modificationsArr = toArray(item.modifications);
+    const extrasArr = toArray(item.extras);
 
     // Modificaciones gratuitas (sin cebolla, sin queso, etc.)
-    for (const mod of item.modifications || []) {
+    for (const mod of modificationsArr) {
       const optionId = FREE_MODIFIER_OPTION_IDS[normalizeForLoyverse(mod)] || PUNTO_CARNE_OPTION_IDS[normalizeForLoyverse(mod)];
       if (optionId) {
         lineModifiers.push({ modifier_option_id: optionId, price: 0 });
@@ -61,7 +63,7 @@ function buildReceiptPayload(order) {
     }
 
     // Extras con coste (ya venían separados en item.extras)
-    for (const extraRaw of item.extras || []) {
+    for (const extraRaw of extrasArr) {
       const extraKey = resolveExtraKey(extraRaw);
       if (!extraKey) continue;
 
@@ -93,7 +95,7 @@ function buildReceiptPayload(order) {
       variant_id: variantId,
       quantity: item.quantity || 1,
       line_modifiers: lineModifiers.length > 0 ? lineModifiers : undefined,
-      line_note: (item.modifications || []).length > 0 ? item.modifications.join(', ') : undefined,
+      line_note: modificationsArr.length > 0 ? modificationsArr.join(', ') : undefined,
     });
   }
 
