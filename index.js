@@ -3,6 +3,7 @@ const express = require('express');
 const { calculateTotal } = require('./calculateTotal');
 const { createLoyverseReceipt } = require('./loyverseClient');
 const { parseItemsList } = require('./catalog');
+const { enqueue, getPending, markPrinted } = require('./printQueue');
 
 const app = express();
 app.use(express.json());
@@ -49,6 +50,11 @@ app.post('/webhook/order-confirmed', async (req, res) => {
     console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ (parsed) ===');
     console.log(JSON.stringify(order, null, 2));
 
+    // Encolamos el ticket de cocina SIEMPRE, incluso si Loyverse falla después —
+    // la cocina necesita el pedido físico independientemente de la contabilidad.
+    const printJob = enqueue(order);
+    console.log(`Ticket #${printJob.id} añadido a la cola de impresión.`);
+
     const accessToken = process.env.LOYVERSE_ACCESS_TOKEN;
     if (!accessToken) {
       console.error('Falta LOYVERSE_ACCESS_TOKEN en las variables de entorno.');
@@ -76,6 +82,22 @@ app.post('/webhook/order-confirmed', async (req, res) => {
 
 app.get('/', (req, res) => {
   res.send('MU-MU GRILL order server is running.');
+});
+
+// -----------------------------------------------------------------------
+// COLA DE IMPRESIÓN LOCAL
+//    El agente Termux (en la tablet junto a la impresora) consulta esto
+//    periódicamente y envía los tickets pendientes directamente a la
+//    impresora por la red local, sin depender de Loyverse.
+// -----------------------------------------------------------------------
+app.get('/print-queue', (req, res) => {
+  res.status(200).json({ jobs: getPending() });
+});
+
+app.post('/print-queue/:id/ack', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const found = markPrinted(id);
+  res.status(200).json({ success: found });
 });
 
 // Запускаємо сервер ТІЛЬКИ ОДИН РАЗ на порту з process.env.PORT або 3000
