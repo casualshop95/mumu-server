@@ -222,6 +222,19 @@ function resolveCompoundName(rawName) {
   return null;
 }
 
+/**
+ * Happ puede enviar modifications/extras como array o como un solo string
+ * separado por comas (según el tipo de parámetro configurado en la herramienta).
+ * Esta función normaliza ambos casos a un array de strings.
+ */
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 module.exports = {
   normalize,
   PRODUCTS,
@@ -233,4 +246,5 @@ module.exports = {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  toArray,
 };
