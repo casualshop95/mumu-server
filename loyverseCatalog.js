@@ -3,6 +3,11 @@
 // Si Loyverse cambia un ID (se borra y recrea un producto, por ejemplo), solo hay que actualizar este archivo.
 
 const STORE_ID = '2ab89827-201c-4f7e-a869-5cf4f4baf7e9';
+// Dispositivo POS "1", conectado físicamente a la impresora de cocina.
+// Se incluye en cada recibo creado por API con la esperanza de que dispare
+// la impresión automática — Loyverse no garantiza esto oficialmente para
+// recibos creados vía API (ver README.md).
+const POS_DEVICE_ID = '3d06b0e9-5d84-4059-b223-b24edae16cc2';
 
 // --- variant_id de cada producto (mismas claves que PRODUCTS en catalog.js) ---
 const VARIANT_IDS = {
@@ -114,6 +119,7 @@ const PAYMENT_TYPE_IDS = {
 
 module.exports = {
   STORE_ID,
+  POS_DEVICE_ID,
   VARIANT_IDS,
   DELIVERY_FEE_VARIANT_ID,
   POTATO_SWAP_VARIANT_ID,
