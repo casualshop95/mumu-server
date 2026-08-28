@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { calculateTotal } = require('./calculateTotal');
 const { createLoyverseReceipt } = require('./loyverseClient');
+const { parseItemsList } = require('./catalog');
 
 const app = express();
 app.use(express.json());
@@ -17,9 +18,14 @@ app.post('/tools/calculate-total', (req, res) => {
     console.log(JSON.stringify(req.body, null, 2));
 
     const params = req.body.parameters || req.body.arguments || req.body.args || req.body;
+    const items = parseItemsList(params.items || []);
+
+    console.log('=== ITEMS PARSEADOS ===');
+    console.log(JSON.stringify(items, null, 2));
+
     const result = calculateTotal({
       service_type: params.service_type || 'delivery',
-      items: params.items || [],
+      items,
     });
 
     console.log('=== РЕЗУЛЬТАТ РОЗРАХУНКУ ===');
@@ -38,7 +44,9 @@ app.post('/tools/calculate-total', (req, res) => {
 app.post('/webhook/order-confirmed', async (req, res) => {
   try {
     const order = req.body.parameters || req.body.arguments || req.body.args || req.body;
-    console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ ===');
+    order.items = parseItemsList(order.items || []);
+
+    console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ (parsed) ===');
     console.log(JSON.stringify(order, null, 2));
 
     const accessToken = process.env.LOYVERSE_ACCESS_TOKEN;
