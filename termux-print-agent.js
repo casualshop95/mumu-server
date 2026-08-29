@@ -100,6 +100,14 @@ function buildTicket(order) {
     line(`TOTAL: ${Number(order.total).toFixed(2)} EUR`);
     parts.push(Buffer.from([ESC, 0x45, 0x00]));
   }
+  if (order.payment_method === 'cash' && order.cash_amount !== undefined && order.cash_amount !== null && order.cash_amount !== '') {
+    const cashAmount = Number(order.cash_amount);
+    const total = Number(order.total) || 0;
+    line(`Paga con: ${cashAmount.toFixed(2)} EUR`);
+    parts.push(Buffer.from([ESC, 0x45, 0x01]));
+    line(`CAMBIO: ${(cashAmount - total).toFixed(2)} EUR`);
+    parts.push(Buffer.from([ESC, 0x45, 0x00]));
+  }
   parts.push(Buffer.from([ESC, 0x64, 3])); // avance de papel
   parts.push(Buffer.from([GS, 0x56, 0x42, 0x00])); // corte
 
