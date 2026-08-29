@@ -1,5 +1,5 @@
 // loyverseClient.js
-const { resolveProductKey, resolveExtraKey, resolveCompoundName, toArray } = require('./catalog');
+const { resolveProductKey, resolveExtraKey, resolveCompoundName, fuzzyResolveProductKey, fuzzyResolveExtraKey, toArray } = require('./catalog');
 const {
   STORE_ID,
   POS_DEVICE_ID,
@@ -44,6 +44,10 @@ function buildReceiptPayload(order) {
       }
     }
 
+    if (!productKey) {
+      productKey = fuzzyResolveProductKey(item.name);
+    }
+
     const variantId = productKey ? VARIANT_IDS[productKey] : undefined;
 
     if (!variantId) {
@@ -65,7 +69,8 @@ function buildReceiptPayload(order) {
 
     // Extras con coste (ya venían separados en item.extras)
     for (const extraRaw of extrasArr) {
-      const extraKey = resolveExtraKey(extraRaw);
+      let extraKey = resolveExtraKey(extraRaw);
+      if (!extraKey) extraKey = fuzzyResolveExtraKey(extraRaw);
       if (!extraKey) continue;
 
       if (extraKey === 'cambio_patatas_gajo' || extraKey === 'cambio_patatas_rusticas' || extraKey === 'cambio_patatas_deluxe') {
