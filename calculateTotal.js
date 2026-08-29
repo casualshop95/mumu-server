@@ -7,6 +7,8 @@ const {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  fuzzyResolveProductKey,
+  fuzzyResolveExtraKey,
   toArray,
 } = require('./catalog');
 
@@ -36,6 +38,7 @@ function calculateTotal({ service_type, items }) {
     const qty = Number(rawItem.quantity) > 0 ? Number(rawItem.quantity) : 1;
     let productKey = resolveProductKey(rawItem.name);
     let extraKeysFromName = [];
+    let fuzzyMatched = false;
 
     // Red de seguridad: si el nombre no coincide con ningún producto tal cual,
     // puede que venga con un extra pegado (p. ej. "El Pastor con extra de bacon").
@@ -45,6 +48,16 @@ function calculateTotal({ service_type, items }) {
       if (compound) {
         productKey = compound.productKey;
         extraKeysFromName = compound.extraKeys;
+      }
+    }
+
+    // Último recurso: búsqueda difusa, por si el nombre está mal escrito, con
+    // alguna palabra de más/menos, o ligeramente distinto al del menú oficial.
+    if (!productKey) {
+      const fuzzyKey = fuzzyResolveProductKey(rawItem.name);
+      if (fuzzyKey) {
+        productKey = fuzzyKey;
+        fuzzyMatched = true;
       }
     }
 
@@ -59,7 +72,8 @@ function calculateTotal({ service_type, items }) {
 
     // Extras que ya venían separados en rawItem.extras
     for (const extraRaw of toArray(rawItem.extras)) {
-      const extraKey = resolveExtraKey(extraRaw);
+      let extraKey = resolveExtraKey(extraRaw);
+      if (!extraKey) extraKey = fuzzyResolveExtraKey(extraRaw);
       if (!extraKey) {
         unknownExtras.push(extraRaw);
         continue;
@@ -80,6 +94,7 @@ function calculateTotal({ service_type, items }) {
     lines.push({
       name: rawItem.name,
       product_key: productKey,
+      fuzzy_matched: fuzzyMatched || undefined,
       quantity: qty,
       base_price: basePrice,
       modifications: toArray(rawItem.modifications), // gratis, solo informativo
