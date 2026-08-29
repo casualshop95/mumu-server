@@ -332,6 +332,20 @@ function parseItemEntry(raw) {
 }
 
 function parseItemsList(rawItems) {
+  // Caso más fiable: Happ envía TODO el array como un único string JSON
+  // (parámetro configurado como String, no Array/Object). El agente debe
+  // generar algo como: [{"name":"Mr Classic","quantity":1,"modifications":["sin cebolla"],"extras":["extra bacon"]}]
+  if (typeof rawItems === 'string') {
+    try {
+      const parsed = JSON.parse(rawItems);
+      if (Array.isArray(parsed)) {
+        return parsed.map((entry) => parseItemEntry(entry));
+      }
+    } catch (err) {
+      // No era JSON válido — seguimos con el resto de la lógica por si acaso.
+    }
+  }
+
   if (!Array.isArray(rawItems)) return [];
   return rawItems.map(parseItemEntry);
 }
