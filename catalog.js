@@ -158,6 +158,13 @@ const EXTRAS = {
 // --- Sinónimos de extras: alias normalizado -> clave canónica de EXTRAS ---
 const EXTRA_SYNONYMS = {
   bacon: 'extra_bacon',
+  cheddar: 'extra_cheddar',
+  mozzarella: 'extra_mozzarella',
+  rulo_de_cabra: 'extra_rulo_de_cabra',
+  cebolla_caramelizada: 'extra_cebolla_caramelizada',
+  pulled_pork: 'extra_pulled_pork',
+  salsa_cereza: 'extra_salsa_cereza',
+  salsa_patatas: 'extra_salsa_patatas',
   extra_queso_cheddar: 'extra_cheddar',
   extra_queso_mozzarella: 'extra_mozzarella',
   extra_queso_rulo_de_cabra: 'extra_rulo_de_cabra',
@@ -186,6 +193,88 @@ function resolveExtraKey(rawName) {
   const key = normalize(rawName);
   if (EXTRAS[key] !== undefined) return key;
   if (EXTRA_SYNONYMS[key]) return EXTRA_SYNONYMS[key];
+  return null;
+}
+
+// --- Búsqueda difusa (fuzzy matching) ---
+// Último recurso cuando el nombre no coincide exactamente ni con ningún sinónimo
+// registrado — por ejemplo, si el cliente lo pronuncia de forma ligeramente distinta,
+// con una palabra de más/menos, o el agente comete un pequeño error de transcripción.
+// Se basa en la distancia de Levenshtein (número mínimo de ediciones de un carácter
+// para pasar de una palabra a otra) sobre las palabras clave del nombre.
+
+function levenshtein(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+// Distancia máxima tolerada, en función de la longitud de la palabra más larga.
+function maxAllowedDistance(len) {
+  if (len <= 4) return 1;
+  if (len <= 8) return 2;
+  return 3;
+}
+
+/**
+ * Intenta encontrar el producto más parecido al nombre dado, usando distancia de edición
+ * sobre la clave completa normalizada. Solo devuelve un resultado si la coincidencia es
+ * lo bastante buena — si no, devuelve null en vez de arriesgarse a adivinar mal.
+ */
+function fuzzyResolveProductKey(rawName) {
+  const key = normalize(rawName);
+  if (!key) return null;
+
+  const candidates = Object.keys(PRODUCTS).concat(Object.keys(PRODUCT_SYNONYMS));
+  let best = null;
+  let bestDistance = Infinity;
+
+  for (const candidateKey of candidates) {
+    const distance = levenshtein(key, candidateKey);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = candidateKey;
+    }
+  }
+
+  if (best && bestDistance <= maxAllowedDistance(Math.max(key.length, best.length))) {
+    return PRODUCTS[best] !== undefined ? best : PRODUCT_SYNONYMS[best];
+  }
+  return null;
+}
+
+/**
+ * Igual que fuzzyResolveProductKey pero para extras.
+ */
+function fuzzyResolveExtraKey(rawName) {
+  const key = normalize(rawName);
+  if (!key) return null;
+
+  const candidates = Object.keys(EXTRAS).concat(Object.keys(EXTRA_SYNONYMS));
+  let best = null;
+  let bestDistance = Infinity;
+
+  for (const candidateKey of candidates) {
+    const distance = levenshtein(key, candidateKey);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = candidateKey;
+    }
+  }
+
+  if (best && bestDistance <= maxAllowedDistance(Math.max(key.length, best.length))) {
+    return EXTRAS[best] !== undefined ? best : EXTRA_SYNONYMS[best];
+  }
   return null;
 }
 
@@ -361,6 +450,8 @@ module.exports = {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  fuzzyResolveProductKey,
+  fuzzyResolveExtraKey,
   toArray,
   parseItemEntry,
   parseItemsList,
