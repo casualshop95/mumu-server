@@ -4,6 +4,7 @@ const { calculateTotal } = require('./calculateTotal');
 const { createLoyverseReceipt } = require('./loyverseClient');
 const { parseItemsList } = require('./catalog');
 const { enqueue, getPending, markPrinted } = require('./printQueue');
+const { isDuplicate } = require('./dedupe');
 
 const app = express();
 app.use(express.json());
@@ -49,6 +50,21 @@ app.post('/webhook/order-confirmed', async (req, res) => {
 
     console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ (parsed) ===');
     console.log(JSON.stringify(order, null, 2));
+
+    // Protección 1: si items llega vacío, es casi seguro una llamada incompleta
+    // (streaming a medio terminar) — la rechazamos sin encolar nada ni tocar Loyverse.
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      console.warn('Pedido descartado: items vacío (posible llamada incompleta/streaming).');
+      return res.status(200).json({ success: false, error: 'EMPTY_ITEMS_IGNORED' });
+    }
+
+    // Protección 2: si un pedido con el mismo teléfono + mismo total ya se procesó
+    // hace pocos segundos, es casi seguro la misma llamada disparada varias veces
+    // (visto con Retell: 2-3 llamadas en menos de 30ms con datos parciales distintos).
+    if (isDuplicate(order)) {
+      console.warn('Pedido descartado: duplicado detectado en los últimos 20s.', JSON.stringify(order));
+      return res.status(200).json({ success: false, error: 'DUPLICATE_ORDER_IGNORED' });
+    }
 
     // Encolamos el ticket de cocina SIEMPRE, incluso si Loyverse falla después —
     // la cocina necesita el pedido físico independientemente de la contabilidad.
