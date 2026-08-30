@@ -61,9 +61,6 @@ const VARIANT_IDS = {
 // Producto especial: coste de envío como línea propia del pedido
 const DELIVERY_FEE_VARIANT_ID = 'b6e942ab-32ab-4278-9b17-03bc089dff8d'; // "Servicio de entrega"
 
-// Producto especial: cambio de patatas por de gajo (sustitución con suplemento)
-const POTATO_SWAP_VARIANT_ID = '090bf890-94cd-4eb8-a260-814e1b2c56b7'; // "Acompañado patatas de gajo"
-
 // --- modifier_option_id de cada extra/modificación con coste (mismas claves que EXTRAS en catalog.js) ---
 const MODIFIER_OPTION_IDS = {
   extra_bacon: 'dc6b0d59-001d-4d63-a466-a013148ee52a',
@@ -79,6 +76,11 @@ const MODIFIER_OPTION_IDS = {
   extra_salsa_patatas: 'e77ab93f-9794-47ae-8171-f9a4ebde7865',
   extra_salsa_de_cereza: '71049b9f-7f98-470b-a006-a5c7580e52b9',
   extra_salsa_cereza: '71049b9f-7f98-470b-a006-a5c7580e52b9',
+  // Cambio de patatas por gajo/rústicas/deluxe — ahora es un modificador de pago
+  // (grupo "Extras" en Loyverse), no un producto aparte.
+  cambio_patatas_gajo: '3db3d180-3873-41a9-89a7-7156717fe709',
+  cambio_patatas_rusticas: '3db3d180-3873-41a9-89a7-7156717fe709',
+  cambio_patatas_deluxe: '3db3d180-3873-41a9-89a7-7156717fe709',
 };
 
 // --- modifier_option_id de las modificaciones SIN coste (grupo "MODIFICACIONES") ---
@@ -122,7 +124,6 @@ module.exports = {
   POS_DEVICE_ID,
   VARIANT_IDS,
   DELIVERY_FEE_VARIANT_ID,
-  POTATO_SWAP_VARIANT_ID,
   MODIFIER_OPTION_IDS,
   FREE_MODIFIER_OPTION_IDS,
   PUNTO_CARNE_OPTION_IDS,
