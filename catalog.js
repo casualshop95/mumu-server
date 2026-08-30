@@ -444,6 +444,22 @@ function parseItemsList(rawItems) {
   return rawItems.map(parseItemEntry);
 }
 
+// --- Modificaciones gratuitas CONOCIDAS (las que están en la Knowledge Base) ---
+// Cualquier modificación que el cliente pida y NO esté en esta lista se trata igualmente
+// como gratuita (nunca se le pone precio), pero se marca como "petición especial" para
+// que destaque claramente en el ticket de cocina y el personal la revise con atención.
+const KNOWN_MODIFICATIONS = new Set([
+  'sin_cebolla', 'sin_cebolla_a_la_plancha', 'sin_cebolla_frita', 'sin_queso',
+  'sin_salsa', 'sin_mostaza', 'sin_salsa_de_cereza', 'salsa_aparte',
+  'sin_pepinillos', 'sin_tomate', 'sin_lechuga', 'sin_rucula', 'sin_bacon',
+  'sin_berenjenas', 'sin_queso_azul', 'sin_champinones', 'sin_salsa_de_tomate',
+  'poco_hecha', 'al_punto', 'bien_hecha', 'muy_hecha',
+]);
+
+function isKnownModification(text) {
+  return KNOWN_MODIFICATIONS.has(normalize(text));
+}
+
 module.exports = {
   normalize,
   PRODUCTS,
@@ -460,4 +476,5 @@ module.exports = {
   toArray,
   parseItemEntry,
   parseItemsList,
+  isKnownModification,
 };
