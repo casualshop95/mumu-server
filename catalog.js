@@ -173,6 +173,7 @@ const EXTRA_SYNONYMS = {
   extra_salsa_de_cereza: 'extra_salsa_cereza',
   patatas_de_gajo: 'cambio_patatas_gajo',
   patatas_gajo: 'cambio_patatas_gajo',
+  gajo: 'cambio_patatas_gajo',
   cambio_patatas: 'cambio_patatas_gajo',
   patatas_rusticas: 'cambio_patatas_rusticas',
   patatas_de_deluxe: 'cambio_patatas_deluxe',
@@ -335,11 +336,28 @@ function resolveCompoundName(rawName) {
     const remainderTokens = remainderRaw.split('_').filter((t) => t && !CONNECTOR_WORDS.has(t));
     if (remainderTokens.length === 0) continue;
 
-    const remainderKey = remainderTokens.join('_');
-    const extraKey = resolveExtraKey(remainderKey) || resolveExtraKey(remainderTokens[remainderTokens.length - 1]);
+    // Intento 1: el remanente completo coincide con un extra tal cual (p. ej. "salsa_cereza")
+    const wholeKey = remainderTokens.join('_');
+    const wholeExtraKey = resolveExtraKey(wholeKey);
+    if (wholeExtraKey) return { productKey, extraKeys: [wholeExtraKey], modificationText: null };
 
-    if (extraKey) {
-      return { productKey, extraKeys: [extraKey] };
+    // Intento 2: puede haber VARIOS extras pegados (p. ej. "gajo bacon extra" = cambio
+    // de patatas + extra bacon). Comprobamos cada palabra suelta, no solo la última —
+    // así no perdemos ninguna en silencio. Lo que no se reconozca se guarda como
+    // modificación de todos modos.
+    const matchedExtraKeys = [];
+    const leftoverTokens = [];
+    for (const token of remainderTokens) {
+      const tokenExtraKey = resolveExtraKey(token);
+      if (tokenExtraKey) matchedExtraKeys.push(tokenExtraKey);
+      else leftoverTokens.push(token);
+    }
+    if (matchedExtraKeys.length > 0) {
+      return {
+        productKey,
+        extraKeys: matchedExtraKeys,
+        modificationText: leftoverTokens.length > 0 ? leftoverTokens.join(' ') : null,
+      };
     }
   }
 
@@ -531,5 +549,7 @@ module.exports = {
   toArray,
   parseItemEntry,
   parseItemsList,
+  isKnownModification,
+};
   isKnownModification,
 };
