@@ -1,5 +1,5 @@
 // loyverseClient.js
-const { resolveProductKey, resolveExtraKey, resolveCompoundName, fuzzyResolveProductKey, fuzzyResolveExtraKey, toArray } = require('./catalog');
+const { resolveProductKey, resolveExtraKey, resolveCompoundName, resolveFuzzyCompoundName, fuzzyResolveProductKey, fuzzyResolveExtraKey, toArray } = require('./catalog');
 const {
   STORE_ID,
   POS_DEVICE_ID,
@@ -33,6 +33,7 @@ function buildReceiptPayload(order) {
   for (const item of order.items || []) {
     let productKey = resolveProductKey(item.name);
     let extraKeysFromName = [];
+    let modificationFromName = null;
 
     // Misma red de seguridad que calculateTotal.js: si el nombre viene con un extra pegado
     if (!productKey) {
@@ -47,6 +48,15 @@ function buildReceiptPayload(order) {
       productKey = fuzzyResolveProductKey(item.name);
     }
 
+    if (!productKey) {
+      const split = resolveFuzzyCompoundName(item.name);
+      if (split) {
+        productKey = split.productKey;
+        extraKeysFromName = split.extraKeys;
+        modificationFromName = split.modificationText;
+      }
+    }
+
     const variantId = productKey ? VARIANT_IDS[productKey] : undefined;
 
     if (!variantId) {
@@ -55,7 +65,8 @@ function buildReceiptPayload(order) {
     }
 
     const lineModifiers = [];
-    const modificationsArr = toArray(item.modifications);
+    const modificationsArr = [...toArray(item.modifications)];
+    if (modificationFromName) modificationsArr.push(modificationFromName);
     const extrasArr = toArray(item.extras);
 
     // Aplica un extra de pago ya resuelto como modificador en la línea del producto.
