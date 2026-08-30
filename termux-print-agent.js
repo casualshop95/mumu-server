@@ -52,6 +52,27 @@ function httpPostJson(url) {
   });
 }
 
+const KNOWN_MODIFICATIONS = new Set([
+  'sin_cebolla', 'sin_cebolla_a_la_plancha', 'sin_cebolla_frita', 'sin_queso',
+  'sin_salsa', 'sin_mostaza', 'sin_salsa_de_cereza', 'salsa_aparte',
+  'sin_pepinillos', 'sin_tomate', 'sin_lechuga', 'sin_rucula', 'sin_bacon',
+  'sin_berenjenas', 'sin_queso_azul', 'sin_champinones', 'sin_salsa_de_tomate',
+  'poco_hecha', 'al_punto', 'bien_hecha', 'muy_hecha',
+]);
+
+function normalizeText(str) {
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function isKnownModification(text) {
+  return KNOWN_MODIFICATIONS.has(normalizeText(text));
+}
+
 // Construye el ticket ESC/POS aquí mismo (copia simplificada de escpos.js del servidor,
 // para que este script funcione de forma independiente, sin depender de otros archivos).
 function buildTicket(order) {
@@ -72,6 +93,11 @@ function buildTicket(order) {
   if (order.customer_name) line(`Cliente: ${order.customer_name}`);
   if (order.customer_phone) line(`Tel: ${order.customer_phone}`);
   if (order.service_type === 'delivery') line(`Direccion: ${order.delivery_address || '*** FALTA DIRECCION - LLAMAR AL CLIENTE ***'}`);
+  if (order.delivery_notes && String(order.delivery_notes).trim()) {
+    parts.push(Buffer.from([ESC, 0x45, 0x01]));
+    line(`*** NOTA DE ENTREGA: ${order.delivery_notes} ***`);
+    parts.push(Buffer.from([ESC, 0x45, 0x00]));
+  }
   if (order.requested_time) line(`Hora solicitada: ${order.requested_time}`);
   line('--------------------------------');
 
@@ -83,7 +109,10 @@ function buildTicket(order) {
     const extras = Array.isArray(item.extras) ? item.extras : (item.extras ? [item.extras] : []);
     mods.forEach((m) => {
       const text = typeof m === 'object' && m !== null ? m.name : m;
-      if (text && String(text).trim()) line(`   - ${text}`);
+      if (text && String(text).trim()) {
+        const known = isKnownModification(text);
+        line(known ? `   - ${text}` : `   *** PETICIÓN ESPECIAL: ${text} ***`);
+      }
     });
     extras.forEach((e) => {
       const text = typeof e === 'object' && e !== null ? e.name : e;
