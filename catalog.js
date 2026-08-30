@@ -70,6 +70,7 @@ const PRODUCT_SYNONYMS = {
   mr_classic_burger: 'mr_classic',
   classic: 'mr_classic',
   hamburguesa_classic: 'mr_classic',
+  mister_classic: 'mr_classic',
 
   cheddar_bacon_burger: 'cheddar_bacon',
   cheddar: 'cheddar_bacon',
@@ -346,6 +347,35 @@ function resolveCompoundName(rawName) {
 }
 
 /**
+ * Último recurso cuando ni el nombre completo ni resolveCompoundName funcionan —
+ * por ejemplo "Mister Classic patpatpatatas de gajo" (nombre mal pronunciado +
+ * modificación pegada, con ruido de transcripción). Prueba a cortar el texto
+ * palabra por palabra desde el final, buscando el prefijo más largo que
+ * coincida (exacto o difuso) con un producto real. Lo que sobra se devuelve
+ * como texto de extra/modificación, se reconozca o no — mejor guardarlo como
+ * nota que perder el pedido entero por un problema de transcripción.
+ */
+function resolveFuzzyCompoundName(rawName) {
+  const words = String(rawName).trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return null;
+
+  for (let i = words.length - 1; i >= 1; i--) {
+    const prefixText = words.slice(0, i).join(' ');
+    const suffixText = words.slice(i).join(' ');
+    const productKey = resolveProductKey(prefixText) || fuzzyResolveProductKey(prefixText);
+    if (!productKey) continue;
+
+    const extraKey = resolveExtraKey(suffixText) || fuzzyResolveExtraKey(suffixText);
+    return {
+      productKey,
+      extraKeys: extraKey ? [extraKey] : [],
+      modificationText: extraKey ? null : suffixText,
+    };
+  }
+  return null;
+}
+
+/**
  * Happ puede enviar modifications/extras como array o como un solo string
  * separado por comas (según el tipo de parámetro configurado en la herramienta).
  * Esta función normaliza ambos casos a un array de strings.
@@ -495,6 +525,7 @@ module.exports = {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  resolveFuzzyCompoundName,
   fuzzyResolveProductKey,
   fuzzyResolveExtraKey,
   toArray,
