@@ -38,8 +38,8 @@ function buildKitchenTicket(order) {
   parts.push(textLine(`Hora: ${now.toLocaleString('es-ES')}`));
   if (order.customer_name) parts.push(textLine(`Cliente: ${order.customer_name}`));
   if (order.customer_phone) parts.push(textLine(`Tel: ${order.customer_phone}`));
-  if (order.service_type === 'delivery' && order.delivery_address) {
-    parts.push(textLine(`Direccion: ${order.delivery_address}`));
+  if (order.service_type === 'delivery') {
+    parts.push(textLine(`Direccion: ${order.delivery_address || '*** FALTA DIRECCION - LLAMAR AL CLIENTE ***'}`));
   }
   if (order.requested_time) parts.push(textLine(`Hora solicitada: ${order.requested_time}`));
   parts.push(textLine('--------------------------------'));
@@ -67,6 +67,14 @@ function buildKitchenTicket(order) {
   if (order.total !== undefined) {
     parts.push(CMD.BOLD_ON);
     parts.push(textLine(`TOTAL: ${Number(order.total).toFixed(2)} EUR`));
+    parts.push(CMD.BOLD_OFF);
+  }
+  if (order.payment_method === 'cash' && order.cash_amount !== undefined && order.cash_amount !== null && order.cash_amount !== '') {
+    const cashAmount = Number(order.cash_amount);
+    const total = Number(order.total) || 0;
+    parts.push(textLine(`Paga con: ${cashAmount.toFixed(2)} EUR`));
+    parts.push(CMD.BOLD_ON);
+    parts.push(textLine(`CAMBIO: ${(cashAmount - total).toFixed(2)} EUR`));
     parts.push(CMD.BOLD_OFF);
   }
 
