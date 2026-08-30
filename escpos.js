@@ -3,6 +3,8 @@
 // la mayoría de impresoras térmicas baratas, incluida la NT-8360L).
 // No usamos ninguna librería externa: son solo unos pocos comandos de bytes.
 
+const { isKnownModification } = require('./catalog');
+
 const ESC = 0x1b;
 const GS = 0x1d;
 
@@ -41,6 +43,11 @@ function buildKitchenTicket(order) {
   if (order.service_type === 'delivery') {
     parts.push(textLine(`Direccion: ${order.delivery_address || '*** FALTA DIRECCION - LLAMAR AL CLIENTE ***'}`));
   }
+  if (order.delivery_notes && String(order.delivery_notes).trim()) {
+    parts.push(CMD.BOLD_ON);
+    parts.push(textLine(`*** NOTA DE ENTREGA: ${order.delivery_notes} ***`));
+    parts.push(CMD.BOLD_OFF);
+  }
   if (order.requested_time) parts.push(textLine(`Hora solicitada: ${order.requested_time}`));
   parts.push(textLine('--------------------------------'));
 
@@ -52,7 +59,11 @@ function buildKitchenTicket(order) {
     const extras = Array.isArray(item.extras) ? item.extras : (item.extras ? [item.extras] : []);
     for (const m of mods) {
       const text = typeof m === 'object' && m !== null ? m.name : m;
-      if (text && String(text).trim()) parts.push(textLine(`   - ${text}`));
+      if (text && String(text).trim()) {
+        const known = isKnownModification(text);
+        const label = known ? `   - ${text}` : `   *** PETICIÓN ESPECIAL: ${text} ***`;
+        parts.push(textLine(label));
+      }
     }
     for (const e of extras) {
       const text = typeof e === 'object' && e !== null ? e.name : e;
