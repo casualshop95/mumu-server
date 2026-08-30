@@ -170,6 +170,11 @@ const EXTRA_SYNONYMS = {
   extra_queso_rulo_de_cabra: 'extra_rulo_de_cabra',
   extra_salsa_para_las_patatas: 'extra_salsa_patatas',
   extra_salsa_de_cereza: 'extra_salsa_cereza',
+  patatas_de_gajo: 'cambio_patatas_gajo',
+  patatas_gajo: 'cambio_patatas_gajo',
+  cambio_patatas: 'cambio_patatas_gajo',
+  patatas_rusticas: 'cambio_patatas_rusticas',
+  patatas_de_deluxe: 'cambio_patatas_deluxe',
 };
 
 const DELIVERY_FEE = 3.00;
