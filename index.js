@@ -5,6 +5,7 @@ const { createLoyverseReceipt } = require('./loyverseClient');
 const { parseItemsList } = require('./catalog');
 const { enqueue, getPending, markPrinted } = require('./printQueue');
 const { isDuplicate } = require('./dedupe');
+const { cacheCalculation, getCachedCalculation } = require('./orderCache');
 
 const app = express();
 app.use(express.json());
@@ -33,6 +34,19 @@ app.post('/tools/calculate-total', (req, res) => {
     console.log('=== РЕЗУЛЬТАТ РОЗРАХУНКУ ===');
     console.log(JSON.stringify(result, null, 2));
 
+    // Si el cálculo fue exitoso (sin artículos desconocidos) y tenemos un
+    // teléfono, lo guardamos como fuente de verdad para create_order — así
+    // evitamos que una reconstrucción inconsistente del pedido en la llamada
+    // posterior cambie lo que ya se le confirmó al cliente.
+    if (!result.error && (!result.unknown_items || result.unknown_items.length === 0) && params.customer_phone) {
+      cacheCalculation(params.customer_phone, {
+        service_type: params.service_type || 'delivery',
+        lines: result.lines,
+        total: result.total,
+        delivery_fee: result.delivery_fee,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       ...result,
@@ -50,6 +64,28 @@ app.post('/webhook/order-confirmed', async (req, res) => {
 
     console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ (parsed) ===');
     console.log(JSON.stringify(order, null, 2));
+
+    // Protección 3: si hay un cálculo verificado reciente de calculate_total
+    // para este teléfono, lo usamos como fuente de verdad para items/total —
+    // así una reconstrucción inconsistente en esta llamada (duplicar líneas,
+    // perder un extra, etc.) no cambia lo que ya se le confirmó al cliente.
+    const cached = getCachedCalculation(order.customer_phone);
+    if (cached) {
+      const cachedItems = (cached.lines || []).map((line) => ({
+        name: line.name,
+        quantity: line.quantity,
+        modifications: line.modifications || [],
+        extras: (line.extras || []).map((e) => e.name),
+      }));
+      const itemsMatch = JSON.stringify(cachedItems) === JSON.stringify(order.items);
+      const totalMatch = Number(cached.total) === Number(order.total);
+      if (!itemsMatch || !totalMatch) {
+        console.warn('El pedido recibido no coincide con el último calculate_total verificado — usando los datos verificados en su lugar.');
+      }
+      order.items = cachedItems;
+      order.total = cached.total;
+      order.delivery_fee = cached.delivery_fee;
+    }
 
     // Protección 1: si items llega vacío, es casi seguro una llamada incompleta
     // (streaming a medio terminar) — la rechazamos sin encolar nada ni tocar Loyverse.
