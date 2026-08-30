@@ -69,6 +69,7 @@ function calculateTotal({ service_type, items }) {
     const basePrice = PRODUCTS[productKey];
     let lineExtrasTotal = 0;
     const appliedExtras = [];
+    const freeModifications = [];
 
     // Extras que ya venían separados en rawItem.extras
     for (const extraRaw of toArray(rawItem.extras)) {
@@ -80,6 +81,22 @@ function calculateTotal({ service_type, items }) {
       }
       lineExtrasTotal += EXTRAS[extraKey];
       appliedExtras.push({ name: extraRaw, key: extraKey, price: EXTRAS[extraKey] });
+    }
+
+    // Red de seguridad: Retell (u otras plataformas) a veces coloca un extra con
+    // coste dentro de "modifications" en vez de "extras" — de forma inconsistente
+    // entre llamadas. Revisamos también aquí por si algún texto coincide con un
+    // extra de pago conocido, para no perder el cobro solo por venir en el campo
+    // equivocado.
+    for (const modRaw of toArray(rawItem.modifications)) {
+      let extraKey = resolveExtraKey(modRaw);
+      if (!extraKey) extraKey = fuzzyResolveExtraKey(modRaw);
+      if (extraKey) {
+        lineExtrasTotal += EXTRAS[extraKey];
+        appliedExtras.push({ name: modRaw, key: extraKey, price: EXTRAS[extraKey] });
+      } else {
+        freeModifications.push(modRaw);
+      }
     }
 
     // Extras detectados dentro del propio nombre (ver red de seguridad arriba)
@@ -97,7 +114,7 @@ function calculateTotal({ service_type, items }) {
       fuzzy_matched: fuzzyMatched || undefined,
       quantity: qty,
       base_price: basePrice,
-      modifications: toArray(rawItem.modifications), // gratis, solo informativo
+      modifications: freeModifications, // gratis, solo informativo (ya sin los que resultaron ser extras de pago)
       extras: appliedExtras,
       line_total: round2(lineTotal),
     });
