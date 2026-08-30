@@ -71,7 +71,7 @@ function buildTicket(order) {
   line(`Hora: ${new Date().toLocaleString('es-ES')}`);
   if (order.customer_name) line(`Cliente: ${order.customer_name}`);
   if (order.customer_phone) line(`Tel: ${order.customer_phone}`);
-  if (order.service_type === 'delivery' && order.delivery_address) line(`Direccion: ${order.delivery_address}`);
+  if (order.service_type === 'delivery') line(`Direccion: ${order.delivery_address || '*** FALTA DIRECCION - LLAMAR AL CLIENTE ***'}`);
   if (order.requested_time) line(`Hora solicitada: ${order.requested_time}`);
   line('--------------------------------');
 
