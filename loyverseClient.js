@@ -140,8 +140,8 @@ function normalizeForLoyverse(str) {
 function buildNote(order) {
   const parts = [];
   if (order.customer_name) parts.push(`Cliente: ${order.customer_name}`);
-  if (order.service_type === 'delivery' && order.delivery_address) {
-    parts.push(`Dirección: ${order.delivery_address}`);
+  if (order.service_type === 'delivery') {
+    parts.push(`Dirección: ${order.delivery_address || '⚠️ FALTA DIRECCIÓN — revisar con el cliente'}`);
   } else {
     parts.push('Recogida en local');
   }
