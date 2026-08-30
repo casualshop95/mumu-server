@@ -5,7 +5,6 @@ const {
   POS_DEVICE_ID,
   VARIANT_IDS,
   DELIVERY_FEE_VARIANT_ID,
-  POTATO_SWAP_VARIANT_ID,
   MODIFIER_OPTION_IDS,
   FREE_MODIFIER_OPTION_IDS,
   PUNTO_CARNE_OPTION_IDS,
@@ -59,42 +58,40 @@ function buildReceiptPayload(order) {
     const modificationsArr = toArray(item.modifications);
     const extrasArr = toArray(item.extras);
 
-    // Modificaciones gratuitas (sin cebolla, sin queso, etc.)
+    // Aplica un extra de pago ya resuelto como modificador en la línea del producto.
+    const applyPaidExtra = (extraKey) => {
+      const optionId = MODIFIER_OPTION_IDS[extraKey];
+      if (optionId) {
+        lineModifiers.push({ modifier_option_id: optionId });
+      }
+    };
+
+    // Extras con coste (ya venían separados en item.extras)
+    for (const extraRaw of extrasArr) {
+      let extraKey = resolveExtraKey(extraRaw);
+      if (!extraKey) extraKey = fuzzyResolveExtraKey(extraRaw);
+      if (extraKey) applyPaidExtra(extraKey);
+    }
+
+    // Modificaciones: primero comprobamos si en realidad es un extra de pago que
+    // Retell colocó en el campo equivocado (misma defensa que en calculateTotal.js);
+    // si no, se trata como modificación gratuita normal.
     for (const mod of modificationsArr) {
+      let extraKey = resolveExtraKey(mod);
+      if (!extraKey) extraKey = fuzzyResolveExtraKey(mod);
+      if (extraKey) {
+        applyPaidExtra(extraKey);
+        continue;
+      }
       const optionId = FREE_MODIFIER_OPTION_IDS[normalizeForLoyverse(mod)] || PUNTO_CARNE_OPTION_IDS[normalizeForLoyverse(mod)];
       if (optionId) {
         lineModifiers.push({ modifier_option_id: optionId, price: 0 });
       }
     }
 
-    // Extras con coste (ya venían separados en item.extras)
-    for (const extraRaw of extrasArr) {
-      let extraKey = resolveExtraKey(extraRaw);
-      if (!extraKey) extraKey = fuzzyResolveExtraKey(extraRaw);
-      if (!extraKey) continue;
-
-      if (extraKey === 'cambio_patatas_gajo' || extraKey === 'cambio_patatas_rusticas' || extraKey === 'cambio_patatas_deluxe') {
-        // El cambio de patatas es un producto aparte (sustitución), no un modificador
-        lineItems.push({ variant_id: POTATO_SWAP_VARIANT_ID, quantity: item.quantity || 1 });
-        continue;
-      }
-
-      const optionId = MODIFIER_OPTION_IDS[extraKey];
-      if (optionId) {
-        lineModifiers.push({ modifier_option_id: optionId });
-      }
-    }
-
     // Extras detectados dentro del propio nombre (red de seguridad)
     for (const extraKey of extraKeysFromName) {
-      if (extraKey === 'cambio_patatas_gajo' || extraKey === 'cambio_patatas_rusticas' || extraKey === 'cambio_patatas_deluxe') {
-        lineItems.push({ variant_id: POTATO_SWAP_VARIANT_ID, quantity: item.quantity || 1 });
-        continue;
-      }
-      const optionId = MODIFIER_OPTION_IDS[extraKey];
-      if (optionId) {
-        lineModifiers.push({ modifier_option_id: optionId });
-      }
+      applyPaidExtra(extraKey);
     }
 
     lineItems.push({
