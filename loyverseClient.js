@@ -145,6 +145,9 @@ function buildNote(order) {
   } else {
     parts.push('Recogida en local');
   }
+  if (order.delivery_notes && String(order.delivery_notes).trim()) {
+    parts.push(`NOTA: ${order.delivery_notes}`);
+  }
   if (order.customer_phone) parts.push(`Tel: ${order.customer_phone}`);
   if (order.requested_time) parts.push(`Hora solicitada: ${order.requested_time}`);
   return parts.join(' | ');
