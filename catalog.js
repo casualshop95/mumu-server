@@ -180,6 +180,21 @@ const EXTRA_SYNONYMS = {
 const DELIVERY_FEE = 3.00;
 const FREE_DELIVERY_THRESHOLD = 18.00;
 
+// Palabras genéricas de categoría que el agente a veces añade de más al nombre
+// de un producto (p. ej. "Mr Classic hamburguesa", "Pizza Pantera Negra" cuando
+// Pantera Negra en realidad es una hamburguesa). Ninguna clave canónica del
+// catálogo contiene estas palabras, así que es seguro quitarlas siempre.
+const CATEGORY_FILLER_WORDS = new Set([
+  'hamburguesa', 'hamburguesas', 'burger', 'burgers',
+  'pizza', 'pizzas', 'bebida', 'bebidas', 'postre', 'postres',
+  'complemento', 'complementos', 'racion', 'raciones',
+]);
+
+function stripCategoryFillers(key) {
+  const stripped = key.split('_').filter((t) => !CATEGORY_FILLER_WORDS.has(t)).join('_');
+  return stripped || key; // nunca devolver vacío
+}
+
 /**
  * Resuelve el nombre de un producto (ya escrito por el cliente/agente) a su clave canónica.
  * Devuelve null si no coincide con nada del catálogo.
@@ -188,6 +203,14 @@ function resolveProductKey(rawName) {
   const key = normalize(rawName);
   if (PRODUCTS[key] !== undefined) return key;
   if (PRODUCT_SYNONYMS[key]) return PRODUCT_SYNONYMS[key];
+
+  // Reintento quitando palabras de categoría genéricas (ver más arriba)
+  const stripped = stripCategoryFillers(key);
+  if (stripped !== key) {
+    if (PRODUCTS[stripped] !== undefined) return stripped;
+    if (PRODUCT_SYNONYMS[stripped]) return PRODUCT_SYNONYMS[stripped];
+  }
+
   return null;
 }
 
@@ -237,8 +260,9 @@ function maxAllowedDistance(len) {
  * lo bastante buena — si no, devuelve null en vez de arriesgarse a adivinar mal.
  */
 function fuzzyResolveProductKey(rawName) {
-  const key = normalize(rawName);
-  if (!key) return null;
+  const rawKey = normalize(rawName);
+  if (!rawKey) return null;
+  const key = stripCategoryFillers(rawKey);
 
   const candidates = Object.keys(PRODUCTS).concat(Object.keys(PRODUCT_SYNONYMS));
   let best = null;
