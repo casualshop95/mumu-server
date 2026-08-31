@@ -551,5 +551,3 @@ module.exports = {
   parseItemsList,
   isKnownModification,
 };
-  isKnownModification,
-};
