@@ -65,24 +65,20 @@ app.post('/webhook/order-confirmed', async (req, res) => {
     console.log('=== ПІДТВЕРДЖЕНЕ ЗАМОВЛЕННЯ (parsed) ===');
     console.log(JSON.stringify(order, null, 2));
 
-    // Protección 3: si hay un cálculo verificado reciente de calculate_total
-    // para este teléfono, lo usamos como fuente de verdad para items/total —
-    // así una reconstrucción inconsistente en esta llamada (duplicar líneas,
-    // perder un extra, etc.) no cambia lo que ya se le confirmó al cliente.
+    // Protección 3: si create_order llega con items VACÍOS (llamada incompleta/streaming),
+    // usamos el último calculate_total verificado para este teléfono como red de
+    // seguridad. NUNCA sobrescribimos datos que create_order sí trae completos —
+    // el cliente puede haber corregido el pedido después de aquel cálculo, y en
+    // ese caso create_order es la fuente más reciente y correcta, no el caché.
     const cached = getCachedCalculation(order.customer_phone);
-    if (cached) {
-      const cachedItems = (cached.lines || []).map((line) => ({
+    if (cached && (!Array.isArray(order.items) || order.items.length === 0)) {
+      console.warn('items vacío en create_order — usando el último calculate_total verificado como red de seguridad.');
+      order.items = (cached.lines || []).map((line) => ({
         name: line.name,
         quantity: line.quantity,
         modifications: line.modifications || [],
         extras: (line.extras || []).map((e) => e.name),
       }));
-      const itemsMatch = JSON.stringify(cachedItems) === JSON.stringify(order.items);
-      const totalMatch = Number(cached.total) === Number(order.total);
-      if (!itemsMatch || !totalMatch) {
-        console.warn('El pedido recibido no coincide con el último calculate_total verificado — usando los datos verificados en su lugar.');
-      }
-      order.items = cachedItems;
       order.total = cached.total;
       order.delivery_fee = cached.delivery_fee;
     }
@@ -92,6 +88,23 @@ app.post('/webhook/order-confirmed', async (req, res) => {
     if (!Array.isArray(order.items) || order.items.length === 0) {
       console.warn('Pedido descartado: items vacío (posible llamada incompleta/streaming).');
       return res.status(200).json({ success: false, error: 'EMPTY_ITEMS_IGNORED' });
+    }
+
+    // Protección 4: recalculamos el total AQUÍ MISMO a partir de los items que
+    // realmente trae este create_order — nunca confiamos en el número que diga
+    // el agente (ni en un cálculo cacheado de una llamada anterior, que puede
+    // haber quedado obsoleto si el pedido cambió después). Así el total del
+    // ticket y de Loyverse siempre coincide matemáticamente con los artículos
+    // que se están registrando de verdad.
+    const freshCalc = calculateTotal({ service_type: order.service_type, items: order.items });
+    if (!freshCalc.error) {
+      if (order.total !== undefined && Number(freshCalc.total) !== Number(order.total)) {
+        console.warn(`El total recibido (${order.total}) no coincide con el recalculado a partir de los items (${freshCalc.total}) — usando el recalculado.`);
+      }
+      order.total = freshCalc.total;
+      order.delivery_fee = freshCalc.delivery_fee;
+    } else {
+      console.warn('No se pudo recalcular el total (artículos no reconocidos) — se mantiene el total recibido como último recurso.');
     }
 
     // Protección 2: si un pedido con el mismo teléfono + mismo total ya se procesó
