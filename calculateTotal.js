@@ -7,9 +7,11 @@ const {
   resolveProductKey,
   resolveExtraKey,
   resolveCompoundName,
+  resolveFuzzyCompoundName,
   fuzzyResolveProductKey,
   fuzzyResolveExtraKey,
   toArray,
+  isKnownModification,
 } = require('./catalog');
 
 /**
@@ -24,6 +26,13 @@ const {
  * ]
  * service_type: "delivery" | "pickup"
  */
+// Límite razonable de unidades por línea. Un pedido telefónico normal nunca
+// necesita más que esto de un mismo artículo — si llega más, es casi seguro
+// una alucinación del modelo (hemos visto cantidades como 10.000.001) y no un
+// pedido real. Tratarlo como "no reconocido" para que dispare el mismo
+// mecanismo de reintento/transferencia que un artículo desconocido.
+const MAX_REASONABLE_QUANTITY = 20;
+
 function calculateTotal({ service_type, items }) {
   if (!Array.isArray(items) || items.length === 0) {
     return { error: 'NO_ITEMS', message: 'El pedido no contiene artículos.' };
@@ -35,10 +44,17 @@ function calculateTotal({ service_type, items }) {
   let subtotal = 0;
 
   for (const rawItem of items) {
-    const qty = Number(rawItem.quantity) > 0 ? Number(rawItem.quantity) : 1;
+    const rawQty = Number(rawItem.quantity);
+    if (Number.isFinite(rawQty) && rawQty > MAX_REASONABLE_QUANTITY) {
+      unknownItems.push(`${rawItem.name} (cantidad no válida: ${rawItem.quantity})`);
+      continue;
+    }
+    const qty = rawQty > 0 ? rawQty : 1;
     let productKey = resolveProductKey(rawItem.name);
     let extraKeysFromName = [];
+    let modificationFromName = null;
     let fuzzyMatched = false;
+
 
     // Red de seguridad: si el nombre no coincide con ningún producto tal cual,
     // puede que venga con un extra pegado (p. ej. "El Pastor con extra de bacon").
@@ -48,6 +64,7 @@ function calculateTotal({ service_type, items }) {
       if (compound) {
         productKey = compound.productKey;
         extraKeysFromName = compound.extraKeys;
+        if (compound.modificationText) modificationFromName = compound.modificationText;
       }
     }
 
@@ -57,6 +74,21 @@ function calculateTotal({ service_type, items }) {
       const fuzzyKey = fuzzyResolveProductKey(rawItem.name);
       if (fuzzyKey) {
         productKey = fuzzyKey;
+        fuzzyMatched = true;
+      }
+    }
+
+    // Todavía sin resolver: probamos a cortar el nombre palabra por palabra
+    // (útil para nombres mal transcritos + modificación pegada, p. ej.
+    // "Mister Classic patpatpatatas de gajo"). Lo que sobra se guarda como
+    // modificación aunque no coincida con nada conocido — mejor una nota que
+    // perder el pedido entero.
+    if (!productKey) {
+      const split = resolveFuzzyCompoundName(rawItem.name);
+      if (split) {
+        productKey = split.productKey;
+        extraKeysFromName = split.extraKeys;
+        modificationFromName = split.modificationText;
         fuzzyMatched = true;
       }
     }
@@ -95,7 +127,7 @@ function calculateTotal({ service_type, items }) {
         lineExtrasTotal += EXTRAS[extraKey];
         appliedExtras.push({ name: modRaw, key: extraKey, price: EXTRAS[extraKey] });
       } else {
-        freeModifications.push(modRaw);
+        freeModifications.push({ name: modRaw, known: isKnownModification(modRaw) });
       }
     }
 
@@ -103,6 +135,11 @@ function calculateTotal({ service_type, items }) {
     for (const extraKey of extraKeysFromName) {
       lineExtrasTotal += EXTRAS[extraKey];
       appliedExtras.push({ name: extraKey, key: extraKey, price: EXTRAS[extraKey] });
+    }
+
+    // Texto sobrante al separar el nombre por palabras (ver resolveFuzzyCompoundName)
+    if (modificationFromName) {
+      freeModifications.push({ name: modificationFromName, known: isKnownModification(modificationFromName) });
     }
 
     const lineTotal = (basePrice + lineExtrasTotal) * qty;
