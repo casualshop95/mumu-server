@@ -271,6 +271,13 @@ function fuzzyResolveProductKey(rawName) {
   let bestDistance = Infinity;
 
   for (const candidateKey of candidates) {
+    // Exigimos la misma primera letra SOLO cuando la más corta de las dos
+    // palabras tiene 5 caracteres o menos — ahí un par de erratas puede
+    // convertir una palabra en otra completamente distinta (p. ej. "tarta"
+    // vs "fanta"). Para palabras más largas (p. ej. "pastor" vs "el_pastor",
+    // cuando el cliente omite "El") no lo exigimos, ya que el riesgo de una
+    // coincidencia accidental es mucho menor cuanto más larga es la palabra.
+    if (Math.min(key.length, candidateKey.length) <= 5 && key[0] !== candidateKey[0]) continue;
     const distance = levenshtein(key, candidateKey);
     if (distance < bestDistance) {
       bestDistance = distance;
@@ -296,6 +303,7 @@ function fuzzyResolveExtraKey(rawName) {
   let bestDistance = Infinity;
 
   for (const candidateKey of candidates) {
+    if (Math.min(key.length, candidateKey.length) <= 5 && key[0] !== candidateKey[0]) continue;
     const distance = levenshtein(key, candidateKey);
     if (distance < bestDistance) {
       bestDistance = distance;
