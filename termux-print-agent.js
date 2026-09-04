@@ -14,6 +14,7 @@
 const net = require('net');
 const http = require('http');
 const https = require('https');
+const { exec } = require('child_process');
 
 // --- CONFIGURACIÓN ---
 const SERVER_URL = 'https://mumu-server-production.up.railway.app';
@@ -21,6 +22,16 @@ const PRINTER_IP = '192.168.1.100';
 const PRINTER_PORT = 9100;
 const POLL_INTERVAL_MS = 5000;
 // ----------------------
+
+function announceNewOrder() {
+  // Aviso sonoro vía Termux:API — no depende de que la impresora tenga
+  // zumbador propio (la NT-8360L no respondió al comando ESC/POS de pitido).
+  // Si termux-api no está instalado o falla, simplemente lo ignoramos: nunca
+  // debe bloquear ni retrasar la impresión del ticket en sí.
+  exec('termux-tts-speak "Nuevo pedido en cocina"', (err) => {
+    if (err) console.error('No se pudo reproducir el aviso sonoro:', err.message);
+  });
+}
 
 function httpGetJson(url) {
   return new Promise((resolve, reject) => {
@@ -167,6 +178,7 @@ async function pollOnce() {
         console.log(`Imprimiendo ticket #${job.id}...`);
         const ticket = buildTicket(job.order);
         await printToNetworkPrinter(ticket);
+        announceNewOrder();
         await httpPostJson(`${SERVER_URL}/print-queue/${job.id}/ack`);
         console.log(`Ticket #${job.id} impreso y confirmado.`);
       } catch (err) {
