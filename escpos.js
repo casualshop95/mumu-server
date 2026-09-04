@@ -18,6 +18,12 @@ const CMD = {
   DOUBLE_SIZE_OFF: Buffer.from([GS, 0x21, 0x00]),
   CUT: Buffer.from([GS, 0x56, 0x42, 0x00]),
   FEED_LINES: (n) => Buffer.from([ESC, 0x64, n]),
+  // Comando genérico de zumbador que soportan muchas impresoras térmicas
+  // económicas (clones tipo NT/Xprinter/Gainscha): ESC B n t
+  // n = número de pitidos (1-9), t = duración de cada uno (1-9, unidad propia
+  // de la impresora, no segundos). Si la impresora no lo soporta, simplemente
+  // ignora estos bytes sin afectar al resto del ticket.
+  BUZZER: (n = 3, t = 5) => Buffer.from([ESC, 0x42, n, t]),
 };
 
 function textLine(str) {
@@ -28,6 +34,7 @@ function buildKitchenTicket(order) {
   const parts = [];
 
   parts.push(CMD.INIT);
+  parts.push(CMD.BUZZER(3, 5));
   parts.push(CMD.ALIGN_CENTER);
   parts.push(CMD.DOUBLE_SIZE_ON);
   parts.push(textLine('MU-MU GRILL'));
