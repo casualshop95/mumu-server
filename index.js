@@ -10,6 +10,74 @@ const { cacheCalculation, getCachedCalculation } = require('./orderCache');
 const app = express();
 app.use(express.json());
 
+// --- Sistema de carga de cocina (automático + niveles manuales) ---
+// Guardamos solo en memoria (se reinicia si el servidor reinicia, lo cual es
+// aceptable: en el peor caso, tras un reinicio se necesitan unos pedidos más
+// para volver a detectar la alta demanda).
+const AUTO_BUSY_THRESHOLD = 6; // nº de pedidos en los últimos 30 min para subir automáticamente a level1
+const LOAD_WINDOW_MS = 30 * 60 * 1000;
+let recentOrderTimestamps = [];
+let manualPauseUntil = 0; // timestamp (ms); 0 = no pausado
+let currentLoadLevel = 'normal'; // 'normal' | 'level1' | 'level2', fijado manualmente por el personal
+
+const LOAD_LEVEL_MESSAGES = {
+  normal: 'Tiempo de entrega habitual: 40-50 minutos (hasta 1h15 en hora punta).',
+  level1: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de entrega estimado es de 1 hora a 1 hora y cuarto.',
+  level2: 'Ahora mismo tenemos mucha demanda: el tiempo de entrega estimado es de 1 hora y cuarto a 1 hora y media.',
+};
+
+function registerNewOrder() {
+  recentOrderTimestamps.push(Date.now());
+}
+
+app.get('/tools/check-load', (req, res) => {
+  const now = Date.now();
+  recentOrderTimestamps = recentOrderTimestamps.filter((t) => now - t <= LOAD_WINDOW_MS);
+  const orderCount = recentOrderTimestamps.length;
+  const isPaused = now < manualPauseUntil;
+
+  // Si hay mucha demanda automática y nadie ha subido el nivel manualmente,
+  // lo subimos a level1 como aviso mínimo — pero nunca bajamos un nivel que
+  // el personal haya puesto manualmente más alto (level2).
+  let effectiveLevel = currentLoadLevel;
+  if (orderCount >= AUTO_BUSY_THRESHOLD && effectiveLevel === 'normal') {
+    effectiveLevel = 'level1';
+  }
+
+  res.json({
+    is_paused: isPaused,
+    load_level: effectiveLevel,
+    orders_last_30min: orderCount,
+    message: LOAD_LEVEL_MESSAGES[effectiveLevel],
+  });
+});
+
+// Enlaces sencillos para el personal (pensados para guardar como marcador en
+// el móvil — abrir el enlace es toda la acción necesaria). Protegidos por una
+// clave simple en la variable de entorno ADMIN_SECRET.
+app.get('/admin/set-load', (req, res) => {
+  if (req.query.key !== process.env.ADMIN_SECRET) return res.status(403).send('Clave incorrecta.');
+  const level = req.query.level;
+  if (!['normal', 'level1', 'level2'].includes(level)) {
+    return res.status(400).send('Nivel no válido. Usa: normal, level1 o level2.');
+  }
+  currentLoadLevel = level;
+  res.send(`Nivel de carga actualizado a: ${level}\n${LOAD_LEVEL_MESSAGES[level]}`);
+});
+
+app.get('/admin/pause', (req, res) => {
+  if (req.query.key !== process.env.ADMIN_SECRET) return res.status(403).send('Clave incorrecta.');
+  const minutes = Number(req.query.minutes) || 120;
+  manualPauseUntil = Date.now() + minutes * 60000;
+  res.send(`Pedidos pausados durante ${minutes} minutos (hasta las ${new Date(manualPauseUntil).toLocaleTimeString('es-ES')}).`);
+});
+
+app.get('/admin/resume', (req, res) => {
+  if (req.query.key !== process.env.ADMIN_SECRET) return res.status(403).send('Clave incorrecta.');
+  manualPauseUntil = 0;
+  res.send('Pedidos reanudados.');
+});
+
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
@@ -17,6 +85,20 @@ app.use((req, res, next) => {
 
 app.get('/tools/check-hours', (req, res) => {
   try {
+    // Interruptor de pruebas: si en Railway se pone la variable de entorno
+    // FORCE_OPEN_FOR_TESTING=true, siempre se responde que está abierto,
+    // sin tocar el código. Recuerda ponerla en false (o quitarla) antes de
+    // pasar a producción real.
+    if (process.env.FORCE_OPEN_FOR_TESTING === 'true') {
+      return res.json({
+        is_open: true,
+        current_time: null,
+        day_of_week: null,
+        hours_today: null,
+        note: 'FORCE_OPEN_FOR_TESTING activo',
+      });
+    }
+
     const now = new Date();
     const madridStr = now.toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
     const madridTime = new Date(madridStr);
@@ -165,6 +247,7 @@ app.post('/webhook/order-confirmed', async (req, res) => {
     }
 
     console.log('Recibo creado en Loyverse:', result.receipt.receipt_number);
+    registerNewOrder();
     return res.status(200).json({
       success: true,
       receipt_number: result.receipt.receipt_number,
