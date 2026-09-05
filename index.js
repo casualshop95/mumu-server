@@ -22,8 +22,8 @@ let currentLoadLevel = 'normal'; // 'normal' | 'level1' | 'level2', fijado manua
 
 const LOAD_LEVEL_MESSAGES = {
   normal: 'Tiempo de entrega habitual: 40-50 minutos (hasta 1h15 en hora punta).',
-  level1: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de entrega estimado es de 1 hora a 1 hora y cuarto.',
-  level2: 'Ahora mismo tenemos mucha demanda: el tiempo de entrega estimado es de 1 hora y cuarto a 1 hora y media.',
+  level1: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de entrega estimado es de 1 hora a 1 hora y cuarto, pero haremos todo lo posible por servirlo lo antes posible.',
+  level2: 'Ahora mismo tenemos mucha demanda: el tiempo de entrega estimado es de 1 hora y cuarto a 1 hora y media, pero haremos todo lo posible por servirlo lo antes posible.',
 };
 
 function registerNewOrder() {
