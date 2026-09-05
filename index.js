@@ -56,6 +56,8 @@ app.get('/tools/check-load', (req, res) => {
 // el móvil — abrir el enlace es toda la acción necesaria). Protegidos por una
 // clave simple en la variable de entorno ADMIN_SECRET.
 app.get('/admin/set-load', (req, res) => {
+  console.log('DEBUG key recibida:', JSON.stringify(req.query.key));
+  console.log('DEBUG ADMIN_SECRET en el servidor:', JSON.stringify(process.env.ADMIN_SECRET));
   if (req.query.key !== process.env.ADMIN_SECRET) return res.status(403).send('Clave incorrecta.');
   const level = req.query.level;
   if (!['normal', 'level1', 'level2'].includes(level)) {
