@@ -14,7 +14,7 @@ app.use(express.json());
 // Guardamos solo en memoria (se reinicia si el servidor reinicia, lo cual es
 // aceptable: en el peor caso, tras un reinicio se necesitan unos pedidos más
 // para volver a detectar la alta demanda).
-const AUTO_BUSY_THRESHOLD = 6; // nº de pedidos en los últimos 30 min para subir automáticamente a level1
+const AUTO_BUSY_THRESHOLD = 5; // nº de pedidos en los últimos 30 min para subir automáticamente a level1
 const LOAD_WINDOW_MS = 30 * 60 * 1000;
 let recentOrderTimestamps = [];
 let manualPauseUntil = 0; // timestamp (ms); 0 = no pausado
