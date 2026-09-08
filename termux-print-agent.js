@@ -18,7 +18,7 @@ const { exec } = require('child_process');
 
 // --- CONFIGURACIÓN ---
 const SERVER_URL = 'https://mumu-server-production.up.railway.app';
-const PRINTER_IP = '192.168.1.100';
+const PRINTER_IP = '192.168.1.223';
 const PRINTER_PORT = 9100;
 const POLL_INTERVAL_MS = 5000;
 // ----------------------
