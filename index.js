@@ -21,9 +21,18 @@ let manualPauseUntil = 0; // timestamp (ms); 0 = no pausado
 let currentLoadLevel = 'normal'; // 'normal' | 'level1' | 'level2', fijado manualmente por el personal
 
 const LOAD_LEVEL_MESSAGES = {
-  normal: 'Tiempo de entrega habitual: 40-50 minutos (hasta 1h15 en hora punta).',
-  level1: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de entrega estimado es de 1 hora a 1 hora y cuarto, pero haremos todo lo posible por servirlo lo antes posible.',
-  level2: 'Ahora mismo tenemos mucha demanda: el tiempo de entrega estimado es de 1 hora y cuarto a 1 hora y media, pero haremos todo lo posible por servirlo lo antes posible.',
+  normal: {
+    delivery: 'Tiempo de entrega habitual: 40-50 minutos (hasta 1h15 en hora punta).',
+    pickup: 'Tiempo de recogida habitual: 20-25 minutos.',
+  },
+  level1: {
+    delivery: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de entrega estimado es de 1 hora a 1 hora y cuarto, pero haremos todo lo posible por servirlo lo antes posible.',
+    pickup: 'Ahora mismo tenemos más pedidos de lo habitual: el tiempo de recogida estimado es de 35 minutos, pero haremos todo lo posible por tenerlo listo antes.',
+  },
+  level2: {
+    delivery: 'Ahora mismo tenemos mucha demanda: el tiempo de entrega estimado es de 1 hora y cuarto a 1 hora y media, pero haremos todo lo posible por servirlo lo antes posible.',
+    pickup: 'Ahora mismo tenemos mucha demanda: el tiempo de recogida estimado es de 45 minutos, pero haremos todo lo posible por tenerlo listo antes.',
+  },
 };
 
 function registerNewOrder() {
@@ -44,11 +53,12 @@ app.get('/tools/check-load', (req, res) => {
     effectiveLevel = 'level1';
   }
 
-  res.json({
+    res.json({
     is_paused: isPaused,
     load_level: effectiveLevel,
     orders_last_30min: orderCount,
-    message: LOAD_LEVEL_MESSAGES[effectiveLevel],
+    delivery_message: LOAD_LEVEL_MESSAGES[effectiveLevel].delivery,
+    pickup_message: LOAD_LEVEL_MESSAGES[effectiveLevel].pickup,
   });
 });
 
