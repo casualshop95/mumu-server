@@ -9,6 +9,8 @@ const { cacheCalculation, getCachedCalculation } = require('./orderCache');
 
 const app = express();
 app.use(express.json());
+const loyverseWebhookRouter = require('./loyverseWebhook');
+app.use(loyverseWebhookRouter);
 
 // --- Sistema de carga de cocina (automático + niveles manuales) ---
 // Guardamos solo en memoria (se reinicia si el servidor reinicia, lo cual es
