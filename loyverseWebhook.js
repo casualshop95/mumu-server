@@ -62,12 +62,23 @@ const OUR_STORE_ID = '2ab89827-201c-4f7e-a869-5cf4f4baf7e9';
 // Swap for your existing dedupe.js if you'd rather share that logic.
 const processedReceipts = new Set();
 
-function mapDiningOptionToOrderType(diningOption) {
-  if (!diningOption) return 'unknown';
+function mapDiningOptionToServiceType(diningOption) {
+  if (!diningOption) return 'pickup';
   const normalized = diningOption.toLowerCase();
+  // termux-print-agent.js only checks for the exact string 'delivery' —
+  // anything else prints as "RECOGIDA" (pickup).
   if (normalized.includes('domicilio')) return 'delivery';
-  if (normalized.includes('llevar')) return 'pickup';
-  return diningOption; // fall back to raw value if we don't recognize it
+  return 'pickup';
+}
+
+function mapPaymentMethod(payments) {
+  if (!payments || payments.length === 0) return 'cash';
+  const type = (payments[0].type || '').toUpperCase();
+  // Loyverse payment types seen so far: NONINTEGRATEDCARD (card), CASH.
+  // Treat anything that isn't clearly cash as card, since that's the
+  // termux agent's only other option.
+  if (type.includes('CASH')) return 'cash';
+  return 'card';
 }
 
 router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
@@ -108,15 +119,32 @@ router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
       }
       processedReceipts.add(receipt.receipt_number);
 
+      // IMPORTANT: field names here must match exactly what
+      // termux-print-agent.js's buildTicket(order) reads — it does not
+      // know anything about Loyverse's own field names.
       const order = {
         source: 'loyverse_manual',
         receiptNumber: receipt.receipt_number,
-        orderType: mapDiningOptionToOrderType(receipt.dining_option),
-        note: receipt.note || null,
+        service_type: mapDiningOptionToServiceType(receipt.dining_option),
+        payment_method: mapPaymentMethod(receipt.payments),
+        total: receipt.total_money,
+        // Loyverse's manual POS checkout has no dedicated fields for
+        // customer name/phone/delivery address — until we find a better
+        // source (e.g. looking up receipt.customer_id via the Customers
+        // API), the practical workaround is: write "Nombre / Tel /
+        // Dirección" into the receipt's Note field in the Loyverse app,
+        // and it will show up here as delivery_notes.
+        customer_name: null,
+        customer_phone: null,
+        delivery_address: null,
+        delivery_notes: receipt.note || null,
         items: (receipt.line_items || []).map(li => ({
           name: li.item_name,
           quantity: li.quantity,
-          notes: li.line_note || null,
+          // TODO: confirm the real shape of line_modifiers on a receipt
+          // that actually has modifiers — Loyverse's field names for the
+          // option text inside each modifier aren't confirmed yet.
+          modifications: (li.line_modifiers || []).map(m => m.name || m.modifier_option_name || m.option_name || m),
         })),
       };
 
