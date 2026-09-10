@@ -11,6 +11,8 @@ const app = express();
 app.use(express.json());
 const loyverseWebhookRouter = require('./loyverseWebhook');
 app.use(loyverseWebhookRouter);
+const manualOrderRouter = require('./manualOrder');
+app.use(manualOrderRouter);
 
 // --- Sistema de carga de cocina (automático + niveles manuales) ---
 // Guardamos solo en memoria (se reinicia si el servidor reinicia, lo cual es
