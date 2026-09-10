@@ -39,12 +39,20 @@
 const express = require('express');
 const router = express.Router();
 
-// TODO: point this at your actual printQueue.js export.
-let pushToQueue;
+// printQueue.js exports `enqueue(order)`, not `pushToQueue` — using the
+// wrong name here was the original bug: require() succeeded (no error
+// thrown), but the property was undefined, so orders were silently
+// dropped instead of reaching the queue.
+let enqueue;
 try {
-  pushToQueue = require('./printQueue').pushToQueue;
+  enqueue = require('./printQueue').enqueue;
+  if (typeof enqueue !== 'function') {
+    console.warn('[loyverseWebhook] printQueue.enqueue is not a function — ' +
+      'orders will only be logged, not printed, until this is fixed.');
+    enqueue = null;
+  }
 } catch (e) {
-  console.warn('[loyverseWebhook] Could not load printQueue.pushToQueue — ' +
+  console.warn('[loyverseWebhook] Could not load printQueue.enqueue — ' +
     'orders will only be logged, not printed, until this is wired up.');
 }
 
@@ -114,8 +122,8 @@ router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
 
       console.log('[loyverseWebhook] Queuing order for printing:', JSON.stringify(order));
 
-      if (pushToQueue) {
-        pushToQueue(order);
+      if (enqueue) {
+        enqueue(order);
       }
     } catch (err) {
       console.error('[loyverseWebhook] Failed to process a receipt:', err);
