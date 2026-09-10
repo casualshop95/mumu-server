@@ -91,6 +91,12 @@ router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
   // Ack immediately — Loyverse doesn't need to wait for kitchen printing.
   res.status(200).json({ received: true });
 
+  // TEMPORARY: log the full raw payload so we can confirm the real shape
+  // of line_modifiers and payments before finalizing the mapping below.
+  // Remove this once modifications/extras/cash_amount are all confirmed
+  // working correctly.
+  console.log('[loyverseWebhook] RAW payload:', JSON.stringify(req.body, null, 2));
+
   const receipts = req.body.receipts || [];
 
   for (const receipt of receipts) {
