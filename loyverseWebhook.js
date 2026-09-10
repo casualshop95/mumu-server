@@ -91,12 +91,6 @@ router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
   // Ack immediately — Loyverse doesn't need to wait for kitchen printing.
   res.status(200).json({ received: true });
 
-  // TEMPORARY: log the full raw payload so we can confirm the real shape
-  // of line_modifiers and payments before finalizing the mapping below.
-  // Remove this once modifications/extras/cash_amount are all confirmed
-  // working correctly.
-  console.log('[loyverseWebhook] RAW payload:', JSON.stringify(req.body, null, 2));
-
   const receipts = req.body.receipts || [];
 
   for (const receipt of receipts) {
@@ -144,14 +138,34 @@ router.post('/webhooks/loyverse-receipt', express.json(), (req, res) => {
         customer_phone: null,
         delivery_address: null,
         delivery_notes: receipt.note || null,
-        items: (receipt.line_items || []).map(li => ({
-          name: li.item_name,
-          quantity: li.quantity,
-          // TODO: confirm the real shape of line_modifiers on a receipt
-          // that actually has modifiers — Loyverse's field names for the
-          // option text inside each modifier aren't confirmed yet.
-          modifications: (li.line_modifiers || []).map(m => m.name || m.modifier_option_name || m.option_name || m),
-        })),
+        items: (receipt.line_items || []).map(li => {
+          const modifiers = li.line_modifiers || [];
+          // Loyverse gives two text fields per modifier: `name` is the
+          // modifier GROUP (e.g. "Extras", "Punto de la carne"), `option`
+          // is the actual choice the customer picked (e.g. "Cheddar",
+          // "POCO HECHA"). We want `option`. We also split modifiers into
+          // modifications vs extras based on the group name, so extras
+          // print with "+ Cheddar" instead of being lumped in with
+          // cooking preferences / removals.
+          const modifications = [];
+          const extras = [];
+          modifiers.forEach(m => {
+            const choice = m.option || m.name;
+            if (!choice) return;
+            const group = (m.name || '').toLowerCase();
+            if (group.includes('extra')) {
+              extras.push(choice);
+            } else {
+              modifications.push(choice);
+            }
+          });
+          return {
+            name: li.item_name,
+            quantity: li.quantity,
+            modifications,
+            extras,
+          };
+        }),
       };
 
       console.log('[loyverseWebhook] Queuing order for printing:', JSON.stringify(order));
