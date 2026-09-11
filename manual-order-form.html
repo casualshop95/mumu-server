@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>MU-MU GRILL — Nueva orden</title>
+<style>
+  :root {
+    --bg: #1c1b1a;
+    --panel: #262523;
+    --panel-line: #3a3835;
+    --text: #f2efea;
+    --text-dim: #a8a39c;
+    --accent: #e3a008;
+    --accent-text: #1c1b1a;
+    --danger: #c1440e;
+    --ok: #7fbf6a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono { font-family: "SF Mono", "Courier New", monospace; }
+
+  header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: 0.2px; }
+  header p { margin: 4px 0 0; color: var(--text-dim); font-size: 13px; }
+
+  main { padding: 16px 16px 160px; max-width: 480px; margin: 0 auto; }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  section h2 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
+
+  .toggle-row { display: flex; gap: 8px; }
+  .toggle {
+    flex: 1; text-align: center; padding: 12px 0;
+    border-radius: var(--radius); border: 1px solid var(--panel-line);
+    background: transparent; color: var(--text);
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .toggle.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+  label.field-label { display: block; font-size: 12px; color: var(--text-dim); margin: 12px 0 6px; }
+  label.field-label:first-child { margin-top: 0; }
+
+  input[type=text], input[type=tel], input[type=number], textarea, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-line);
+    border-radius: var(--radius);
+    padding: 11px 12px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1L7 7L13 1' stroke='%23a8a39c' stroke-width='1.5' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  input::placeholder, textarea::placeholder { color: #6b6763; }
+
+  .item-card {
+    border: 1px solid var(--panel-line);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .item-card .remove-item {
+    position: absolute; top: 8px; right: 8px;
+    background: none; border: none; color: var(--text-dim);
+    font-size: 18px; line-height: 1; padding: 4px; cursor: pointer;
+  }
+  .qty-row { display: flex; gap: 8px; align-items: flex-end; }
+  .qty-row .qty-field { width: 80px; }
+  .qty-row input[type=number] { text-align: center; }
+  .item-price {
+    flex: 1;
+    text-align: right;
+    font-size: 15px;
+    color: var(--text-dim);
+    padding-bottom: 11px;
+  }
+  .item-price .amount { color: var(--text); font-weight: 600; }
+
+  button.add-item {
+    width: 100%; padding: 11px 0;
+    border-radius: var(--radius); border: 1px dashed var(--panel-line);
+    background: transparent; color: var(--text-dim);
+    font-size: 14px; cursor: pointer;
+  }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-line);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .summary-row {
+    display: flex; justify-content: space-between;
+    font-size: 14px; color: var(--text-dim);
+    padding: 4px 0;
+  }
+  .summary-row.total {
+    color: var(--text); font-size: 18px; font-weight: 700;
+    border-top: 1px solid var(--panel-line);
+    margin-top: 6px; padding-top: 10px;
+  }
+  .summary-row .val { font-family: "SF Mono", "Courier New", monospace; }
+
+  .cash-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .cash-row input { width: 130px; text-align: right; }
+  #changeRow { display: none; }
+  #changeRow.visible { display: flex; }
+  #changeRow .val.negative { color: var(--danger); }
+  #changeRow .val.positive { color: var(--ok); }
+
+  footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+  footer .inner { max-width: 480px; margin: 0 auto; }
+  button.submit {
+    width: 100%; padding: 16px 0;
+    border-radius: var(--radius); border: none;
+    background: var(--accent); color: var(--accent-text);
+    font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  button.submit:disabled { opacity: 0.5; }
+
+  #status { margin-top: 10px; font-size: 14px; text-align: center; }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MU-MU GRILL</h1>
+  <p>Nueva orden manual — se imprime directamente en cocina</p>
+</header>
+
+<main>
+  <section>
+    <h2>TIPO DE ENTREGA</h2>
+    <div class="toggle-row" id="serviceTypeToggle">
+      <button type="button" class="toggle active" data-value="delivery">A domicilio</button>
+      <button type="button" class="toggle" data-value="pickup">Recogida</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>CLIENTE</h2>
+    <label class="field-label">Nombre</label>
+    <input type="text" id="customerName" placeholder="Juan Pérez">
+    <label class="field-label">Teléfono</label>
+    <input type="tel" id="customerPhone" placeholder="600 000 000">
+    <label class="field-label" id="addressLabel">Dirección</label>
+    <textarea id="deliveryAddress" placeholder="Calle, número, piso..."></textarea>
+    <label class="field-label">Nota (opcional)</label>
+    <input type="text" id="deliveryNotes" placeholder="Timbre roto, llamar al llegar...">
+  </section>
+
+  <section>
+    <h2>PEDIDO</h2>
+    <div id="itemsContainer"></div>
+    <button type="button" class="add-item" id="addItemBtn">+ Añadir producto</button>
+  </section>
+
+
+  <section>
+    <h2>PAGO</h2>
+    <div class="toggle-row" id="paymentToggle">
+      <button type="button" class="toggle active" data-value="cash">Efectivo</button>
+      <button type="button" class="toggle" data-value="card">Tarjeta</button>
+    </div>
+
+    <div class="summary-row">
+      <span>Subtotal</span>
+      <span class="val mono" id="subtotalVal">0.00 EUR</span>
+    </div>
+    <div class="summary-row">
+      <span id="deliveryFeeLabel">Envío</span>
+      <span class="val mono" id="deliveryFeeVal">0.00 EUR</span>
+    </div>
+    <div class="summary-row total">
+      <span>Total</span>
+      <span class="val mono" id="totalVal">0.00 EUR</span>
+    </div>
+
+    <div class="cash-row" id="cashRow">
+      <label class="field-label" style="margin:0;">Efectivo recibido</label>
+      <input type="number" id="cashReceived" class="mono" step="0.5" placeholder="0.00">
+    </div>
+    <div class="summary-row" id="changeRow">
+      <span>Cambio</span>
+      <span class="val mono" id="changeVal">0.00 EUR</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="inner">
+    <button class="submit" id="submitBtn">Enviar a cocina</button>
+    <div id="status"></div>
+  </div>
+</footer>
+
+<script>
+// --- CONFIGURACIÓN (ajustar antes de usar) ---
+const SERVER_URL = 'https://mumu-server-production.up.railway.app';
+const TOKEN = '3040e0ad611144e1d47517362ccb6d2b60b96f5b71564aef';
+// ----------------------------------------------
+
+// --- CATÁLOGO (copiado de catalog.js — mantener sincronizado si cambian precios) ---
+const DELIVERY_FEE = 3.00;
+const FREE_DELIVERY_THRESHOLD = 18.00;
+
+const PRODUCT_CATEGORIES = [
+  { label: 'Hamburguesas', items: [
+    ['mr_classic', 'Mr Classic', 12.00],
+    ['cheddar_bacon', 'Cheddar Bacon', 12.50],
+    ['crunchy_chicken', 'Crunchy Chicken', 11.50],
+    ['smoked_bbq', 'Smoked BBQ', 14.00],
+    ['cosa_nostra', 'Cosa Nostra', 14.00],
+    ['el_pastor', 'El Pastor', 14.00],
+    ['pantera_negra', 'Pantera Negra', 14.00],
+    ['pulled_pork_burger', 'Pulled Pork Burger', 14.00],
+    ['bosque_azul', 'Bosque Azul', 14.00],
+  ]},
+  { label: 'Pizzas', items: [
+    ['margherita', 'Margherita', 9.00],
+    ['prosciutto_funghi', 'Prosciutto Funghi', 10.50],
+    ['di_parma', 'Di Parma', 10.50],
+    ['tonno_e_cipolla', 'Tonno e Cipolla', 10.50],
+    ['pepperoni', 'Pepperoni', 10.50],
+    ['pizza_bbq', 'Pizza BBQ', 10.50],
+    ['quattro_formaggi', 'Quattro Formaggi', 10.50],
+    ['chicken_pesto', 'Chicken Pesto', 10.50],
+    ['huerta_de_la_nonna', 'Huerta de la Nonna', 10.50],
+  ]},
+  { label: 'Patatas y alitas', items: [
+    ['patatas_fritas', 'Patatas Fritas', 3.50],
+    ['patatas_fritas_de_gajo', 'Patatas Fritas de Gajo', 4.00],
+    ['alitas_de_pollo_fritas', 'Alitas de Pollo Fritas', 8.00],
+    ['alitas_de_pollo_en_salsa_bbq', 'Alitas de Pollo en Salsa BBQ', 8.00],
+    ['alitas_de_pollo_en_salsa_bbq_picante', 'Alitas de Pollo en Salsa BBQ Picante', 8.00],
+    ['alitas_de_pollo_en_salsa_buffalo', 'Alitas de Pollo en Salsa Buffalo', 8.00],
+  ]},
+  { label: 'Complementos', items: [
+    ['nuggets_de_pollo', 'Nuggets de Pollo', 6.00],
+    ['croquetas_de_jamon', 'Croquetas de Jamón', 7.00],
+  ]},
+  { label: 'Bebidas', items: [
+    ['coca_cola_classic', 'Coca-Cola', 2.50],
+    ['coca_cola_zero', 'Coca-Cola Zero', 2.50],
+    ['fanta_naranja', 'Fanta Naranja', 2.50],
+    ['fanta_limon', 'Fanta Limón', 2.50],
+    ['aquarius_limon', 'Aquarius Limón', 2.50],
+    ['aquarius_naranja', 'Aquarius Naranja', 2.50],
+    ['nestea', 'Nestea', 2.50],
+    ['agua_sin_gas', 'Agua sin gas', 1.00],
+    ['mahou_5_estrellas', 'Mahou 5 Estrellas', 2.50],
+    ['mahou_sin_alcohol', 'Mahou Sin Alcohol', 2.50],
+  ]},
+  { label: 'Postres', items: [
+    ['tartaleta_de_manzana', 'Tartaleta de Manzana', 4.90],
+    ['brownie_con_nueces', 'Brownie con Nueces', 4.50],
+  ]},
+];
+
+const EXTRAS = [
+  ['Extra Bacon', 1.00],
+  ['Extra Cheddar', 1.00],
+  ['Extra Mozzarella', 1.00],
+  ['Extra Cebolla Caramelizada', 1.00],
+  ['Extra Rulo de Cabra', 1.00],
+  ['Extra Pulled Pork', 2.00],
+  ['Extra Salsa Patatas', 0.50],
+  ['Extra Salsa Cereza', 1.00],
+  ['Patatas de Gajo', 0.50],
+  ['Patatas Rústicas', 0.50],
+  ['Patatas de Deluxe', 0.50],
+];
+
+const KNOWN_MODIFICATIONS = [
+  'Sin cebolla', 'Sin cebolla a la plancha', 'Sin cebolla frita', 'Sin queso',
+  'Sin salsa', 'Sin mostaza', 'Sin salsa de cereza', 'Salsa aparte',
+  'Sin pepinillos', 'Sin tomate', 'Sin lechuga', 'Sin rúcula', 'Sin bacon',
+  'Sin berenjenas', 'Sin queso azul', 'Sin champiñones', 'Sin salsa de tomate',
+  'Poco hecha', 'Al punto', 'Bien hecha', 'Muy hecha',
+];
+
+function normalize(str) {
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+// Flat lookup: normalized product key -> {name, price}
+const PRODUCT_LOOKUP = {};
+PRODUCT_CATEGORIES.forEach(cat => cat.items.forEach(([key, name, price]) => {
+  PRODUCT_LOOKUP[key] = { name, price };
+}));
+
+// Flat lookup: normalized extra name -> price
+const EXTRA_LOOKUP = {};
+EXTRAS.forEach(([name, price]) => { EXTRA_LOOKUP[normalize(name)] = price; });
+
+function buildProductOptions() {
+  let html = '<option value="">Seleccionar producto...</option>';
+  PRODUCT_CATEGORIES.forEach(cat => {
+    html += `<optgroup label="${cat.label}">`;
+    cat.items.forEach(([key, name, price]) => {
+      html += `<option value="${key}">${name} — ${price.toFixed(2)} EUR</option>`;
+    });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+let itemIdCounter = 0;
+let serviceType = 'delivery';
+let paymentMethod = 'cash';
+let lastDeliveryFee = 0;
+
+function addItemRow() {
+  itemIdCounter += 1;
+  const id = itemIdCounter;
+  const container = document.getElementById('itemsContainer');
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.dataset.id = id;
+  card.innerHTML = `
+    <button type="button" class="remove-item" aria-label="Eliminar">×</button>
+    <label class="field-label">Producto</label>
+    <select class="item-select">${buildProductOptions()}</select>
+    <div class="qty-row">
+      <div class="qty-field">
+        <label class="field-label">Cantidad</label>
+        <input type="number" class="item-qty" value="1" min="1">
+      </div>
+      <div class="item-price"><span class="amount">0.00</span> EUR</div>
+    </div>
+    <label class="field-label">Modificaciones (gratis, varias posibles)</label>
+    <div class="chip-group mods-group"></div>
+    <label class="field-label">Extras (con coste, varios posibles)</label>
+    <div class="chip-group extras-group"></div>
+  `;
+  container.appendChild(card);
+
+  const modsGroup = card.querySelector('.mods-group');
+  KNOWN_MODIFICATIONS.forEach(name => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip mod-chip';
+    chip.dataset.name = name;
+    chip.textContent = name;
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active');
+    });
+    modsGroup.appendChild(chip);
+  });
+
+  const extrasGroup = card.querySelector('.extras-group');
+  EXTRAS.forEach(([name, price]) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip extra-chip';
+    chip.dataset.name = name;
+    chip.dataset.price = price;
+    chip.textContent = `${name} +${price.toFixed(2)}`;
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active');
+      recalcTotal();
+    });
+    extrasGroup.appendChild(chip);
+  });
+
+  card.querySelector('.remove-item').addEventListener('click', () => {
+    card.remove();
+    recalcTotal();
+  });
+  card.querySelector('.item-select').addEventListener('change', recalcTotal);
+  card.querySelector('.item-qty').addEventListener('input', recalcTotal);
+
+  recalcTotal();
+}
+
+document.getElementById('addItemBtn').addEventListener('click', () => addItemRow());
+addItemRow();
+
+function setupToggle(containerId, onChange) {
+  const el = document.getElementById(containerId);
+  el.querySelectorAll('.toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.querySelectorAll('.toggle').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      onChange(btn.dataset.value);
+    });
+  });
+}
+
+setupToggle('serviceTypeToggle', (val) => {
+  serviceType = val;
+  const addressField = document.getElementById('deliveryAddress');
+  const addressLabel = document.getElementById('addressLabel');
+  if (val === 'pickup') {
+    addressLabel.textContent = 'Dirección (no necesaria para recogida)';
+  } else {
+    addressLabel.textContent = 'Dirección';
+  }
+  recalcTotal();
+});
+
+setupToggle('paymentToggle', (val) => {
+  paymentMethod = val;
+  document.getElementById('cashRow').style.display = val === 'cash' ? 'flex' : 'none';
+  document.getElementById('changeRow').classList.toggle('visible', val === 'cash');
+  recalcTotal();
+});
+
+function recalcTotal() {
+  let subtotal = 0;
+
+  document.querySelectorAll('.item-card').forEach(card => {
+    const key = card.querySelector('.item-select').value;
+    const qty = Number(card.querySelector('.item-qty').value) || 1;
+    const product = PRODUCT_LOOKUP[key];
+    const basePrice = product ? product.price : 0;
+    const extrasPrice = Array.from(card.querySelectorAll('.extra-chip.active'))
+      .reduce((sum, chip) => sum + Number(chip.dataset.price), 0);
+    const lineTotal = (basePrice + extrasPrice) * qty;
+    card.querySelector('.item-price .amount').textContent = lineTotal.toFixed(2);
+    subtotal += lineTotal;
+  });
+
+  let deliveryFee = 0;
+  const feeLabel = document.getElementById('deliveryFeeLabel');
+  if (serviceType === 'delivery') {
+    deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+    feeLabel.textContent = deliveryFee === 0 ? 'Envío (gratis)' : 'Envío';
+  } else {
+    feeLabel.textContent = 'Envío (recogida)';
+  }
+  lastDeliveryFee = deliveryFee;
+
+  const total = subtotal + deliveryFee;
+
+  document.getElementById('subtotalVal').textContent = subtotal.toFixed(2) + ' EUR';
+  document.getElementById('deliveryFeeVal').textContent = deliveryFee.toFixed(2) + ' EUR';
+  document.getElementById('totalVal').textContent = total.toFixed(2) + ' EUR';
+
+  recalcChange(total);
+  return total;
+}
+
+function recalcChange(total) {
+  const cashInput = document.getElementById('cashReceived');
+  const changeVal = document.getElementById('changeVal');
+  const received = Number(cashInput.value) || 0;
+  const change = received - total;
+  changeVal.textContent = change.toFixed(2) + ' EUR';
+  changeVal.className = 'val mono ' + (change < 0 ? 'negative' : 'positive');
+}
+
+document.getElementById('cashReceived').addEventListener('input', () => {
+  const total = Number(document.getElementById('totalVal').textContent) || 0;
+  recalcChange(parseFloat(document.getElementById('totalVal').textContent));
+});
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
+
+  const itemCards = document.querySelectorAll('.item-card');
+  const items = Array.from(itemCards).map(card => {
+    const key = card.querySelector('.item-select').value;
+    const product = PRODUCT_LOOKUP[key];
+    return {
+      name: product ? product.name : '',
+      quantity: Number(card.querySelector('.item-qty').value) || 1,
+      modifications: Array.from(card.querySelectorAll('.mod-chip.active')).map(c => c.dataset.name),
+      extras: Array.from(card.querySelectorAll('.extra-chip.active')).map(c => c.dataset.name),
+    };
+  }).filter(item => item.name);
+
+  if (items.length === 0) {
+    statusEl.textContent = 'Selecciona al menos un producto.';
+    statusEl.className = 'err';
+    return;
+  }
+
+  const total = parseFloat(document.getElementById('totalVal').textContent) || 0;
+  const cashReceived = Number(document.getElementById('cashReceived').value) || 0;
+
+  const order = {
+    service_type: serviceType,
+    payment_method: paymentMethod,
+    total: total,
+    delivery_fee: lastDeliveryFee,
+    customer_name: document.getElementById('customerName').value.trim() || null,
+    customer_phone: document.getElementById('customerPhone').value.trim() || null,
+    delivery_address: document.getElementById('deliveryAddress').value.trim() || null,
+    delivery_notes: document.getElementById('deliveryNotes').value.trim() || null,
+    items,
+  };
+
+  // termux-print-agent.js only prints "Paga con / CAMBIO" when cash_amount
+  // is present and payment is cash.
+  if (paymentMethod === 'cash' && cashReceived > 0) {
+    order.cash_amount = cashReceived;
+  }
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Enviando...';
+  statusEl.className = '';
+
+  try {
+    const res = await fetch(`${SERVER_URL}/manual-order?token=${encodeURIComponent(TOKEN)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    statusEl.textContent = '✓ Pedido enviado a cocina.';
+    statusEl.className = 'ok';
+  } catch (err) {
+    statusEl.textContent = 'Error al enviar: ' + err.message;
+    statusEl.className = 'err';
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// Initial state
+document.getElementById('cashRow').style.display = 'flex';
+</script>
+
+</body>
+</html>
