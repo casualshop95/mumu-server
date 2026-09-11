@@ -24,7 +24,20 @@ try {
     'orders will only be logged, not printed, until this is wired up.');
 }
 
+router.options('/manual-order', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(204);
+});
+
 router.post('/manual-order', express.json(), (req, res) => {
+  // Allow the form to be opened from anywhere (a local file, a phone
+  // browser, etc.) and still reach this endpoint — without these headers
+  // the browser blocks the request as a CORS violation before it even
+  // reaches our token check below.
+  res.header('Access-Control-Allow-Origin', '*');
+
   const token = req.query.token;
   if (!token || token !== process.env.MANUAL_ORDER_TOKEN) {
     console.warn('[manualOrder] Rejected request with invalid/missing token');
