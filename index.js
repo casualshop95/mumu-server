@@ -9,8 +9,6 @@ const { cacheCalculation, getCachedCalculation } = require('./orderCache');
 
 const app = express();
 app.use(express.json());
-const loyverseWebhookRouter = require('./loyverseWebhook');
-app.use(loyverseWebhookRouter);
 const manualOrderRouter = require('./manualOrder');
 app.use(manualOrderRouter);
 
