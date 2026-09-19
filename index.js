@@ -9,6 +9,7 @@ const { cacheCalculation, getCachedCalculation } = require('./orderCache');
 
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 const manualOrderRouter = require('./manualOrder');
 app.use(manualOrderRouter);
 
