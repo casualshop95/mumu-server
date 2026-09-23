@@ -321,13 +321,14 @@ const KNOWN_MODIFICATIONS = [
   'Sin pepinillos', 'Sin tomate', 'Sin lechuga', 'Sin rúcula', 'Sin bacon',
   'Sin berenjenas', 'Sin queso azul', 'Sin champiñones', 'Sin salsa de tomate',
   'Poco hecha', 'Al punto', 'Bien hecha', 'Muy hecha',
+  'Cambiar ternera por pollo',
 ];
 
 function normalize(str) {
   return String(str)
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
 }
