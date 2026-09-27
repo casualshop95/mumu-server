@@ -100,11 +100,25 @@ function isKnownModification(text) {
 
 // Construye el ticket ESC/POS aquí mismo (copia simplificada de escpos.js del servidor,
 // para que este script funcione de forma independiente, sin depender de otros archivos).
+// La impresora térmica no entiende UTF-8: cada caracter acentuado (á, é, ñ, ¡, ¿...)
+// se imprime como varios símbolos sueltos ilegibles, porque internamente usa una
+// tabla de caracteres de un solo byte (tipo CP437) que no coincide con UTF-8.
+// En vez de adivinar la tabla exacta de esta impresora (ya falló antes con el
+// comando de zumbador), quitamos los acentos antes de imprimir — así el ticket
+// sale siempre legible, sin importar el modelo de impresora.
+function stripDiacritics(str) {
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos y la tilde de la ñ
+    .replace(/¡/g, '')
+    .replace(/¿/g, '');
+}
+
 function buildTicket(order) {
   const ESC = 0x1b;
   const GS = 0x1d;
   const parts = [];
-  const line = (s) => parts.push(Buffer.from(s + '\n', 'utf8'));
+  const line = (s) => parts.push(Buffer.from(stripDiacritics(s) + '\n', 'utf8'));
 
   parts.push(Buffer.from([ESC, 0x40])); // init
 
@@ -169,7 +183,7 @@ function buildTicket(order) {
   line('--------------------------------');
   parts.push(Buffer.from([ESC, 0x61, 0x01])); // centrar
   line('¡Gracias por tu pedido!');
-  line('Valóranos en Google:');
+  line('Déjanos tu opinión en Google:');
   parts.push(Buffer.from([ESC, 0x64, 1]));
   parts.push(QR_BUFFER);
   parts.push(Buffer.from([ESC, 0x61, 0x00])); // izquierda
