@@ -6,6 +6,7 @@ const { parseItemsList } = require('./catalog');
 const { enqueue, getPending, markPrinted } = require('./printQueue');
 const { isDuplicate } = require('./dedupe');
 const { cacheCalculation, getCachedCalculation } = require('./orderCache');
+const { validateAddress } = require('./validateAddress');
 
 const app = express();
 app.use(express.json());
@@ -138,6 +139,19 @@ app.get('/tools/check-hours', (req, res) => {
     console.error('Error comprobando el horario:', err.message);
     // Ante la duda, mejor asumir que está abierto que rechazar un pedido válido por un fallo técnico.
     res.json({ is_open: true, current_time: null, day_of_week: null, hours_today: null, error: 'CHECK_FAILED' });
+  }
+});
+
+app.post('/tools/validate-address', async (req, res) => {
+  try {
+    const params = req.body.parameters || req.body.arguments || req.body.args || req.body;
+    const result = await validateAddress(params.address);
+    console.log('=== VALIDATE ADDRESS ===', JSON.stringify(result));
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error en /tools/validate-address:', err);
+    // Si algo falla, no bloqueamos el pedido: el agente usará la dirección tal cual.
+    res.status(200).json({ status: 'error', message: 'No se pudo validar la dirección.' });
   }
 });
 
