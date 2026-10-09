@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MU-MU GRILL — Pide online</title>
+<meta name="theme-color" content="#000000">
+<style>
+:root{--bg:#000;--panel:#161514;--line:#2a2826;--text:#f5f2ee;--dim:#a29d96;--red:#ff1a1f;--red-d:#c8000a;--ok:#6fcf6f;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer}
+header{text-align:center;padding:18px 16px 8px}
+header img{width:150px;height:auto;display:block;margin:0 auto}
+header p{margin:2px 0 0;color:var(--dim);font-size:13px;letter-spacing:.3px}
+#closed{display:none;margin:10px 16px 0;padding:12px 14px;border:1px solid var(--red-d);background:#2a0b0c;border-radius:12px;font-size:14px;text-align:center}
+nav{position:sticky;top:0;z-index:20;background:rgba(11,11,11,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;gap:8px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:14px;font-weight:600}
+nav button.on{background:var(--red);border-color:var(--red)}
+main{max-width:760px;margin:0 auto;padding:6px 14px 130px}
+h2.cat{margin:26px 2px 12px;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+h2.cat span{color:var(--red)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-align:left;color:inherit;padding:0}
+.card .ph{aspect-ratio:4/3;background:#000 center/cover no-repeat;position:relative}
+.card .ph.none{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1b1a19,#0e0e0e)}
+.card .ph.none img{width:46%;opacity:.35}
+.card .bd{padding:10px 12px 12px;display:flex;flex-direction:column;flex:1}
+.card .nm{font-weight:700;font-size:15px;line-height:1.2}
+.card .ds{color:var(--dim);font-size:12px;margin-top:4px;line-height:1.3;flex:1}
+.card .pr{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.card .pr b{font-size:16px}
+.card .plus{width:32px;height:32px;border-radius:50%;background:var(--red);color:#fff;font-size:22px;line-height:30px;text-align:center;border:0}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:none}
+.overlay.open{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);border-radius:22px 22px 0 0;max-height:92vh;overflow-y:auto;transform:translateY(105%);transition:transform .25s;max-width:760px;margin:0 auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.sheet.open{transform:none}
+.sheet .hero{aspect-ratio:16/10;background:#000 center/cover no-repeat;border-radius:22px 22px 0 0;position:relative}
+.sheet .x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:20px}
+.sheet .in{padding:14px 16px}
+.sheet h3{margin:0;font-size:22px}
+.sheet .sub{color:var(--dim);font-size:13px;margin:4px 0 0}
+.sheet h4{margin:18px 0 8px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:14px}
+.chip.on{background:var(--red);border-color:var(--red)}
+.chip small{color:inherit;opacity:.75}
+.row{display:flex;gap:10px;align-items:center}
+.qty{display:flex;align-items:center;gap:14px}
+.qty button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text);font-size:20px}
+.qty span{min-width:20px;text-align:center;font-weight:700;font-size:18px}
+.cta{width:100%;padding:16px;border:0;border-radius:14px;background:var(--red);color:#fff;font-size:16px;font-weight:700}
+.cta:disabled{opacity:.45}
+.cta.sec{background:transparent;border:1px solid var(--line);margin-top:8px;color:var(--dim);font-weight:600}
+input[type=text],input[type=tel],textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--text);font-size:16px;font-family:inherit}
+textarea{resize:vertical;min-height:48px}
+label.l{display:block;font-size:12px;color:var(--dim);margin:14px 0 6px}
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 70%,transparent);display:none}
+#bar button{max-width:760px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;width:100%;padding:16px 18px;border:0;border-radius:14px;background:var(--red);color:#fff;font-size:16px;font-weight:700}
+.ln{display:flex;gap:10px;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ln .t{flex:1}.ln .t small{display:block;color:var(--dim);margin-top:2px}
+.ln .rm{background:none;border:0;color:var(--dim);font-size:13px;text-decoration:underline;padding:0;margin-top:4px}
+.sum{display:flex;justify-content:space-between;padding:6px 0;color:var(--dim);font-size:14px}
+.sum.tot{color:var(--text);font-size:19px;font-weight:800;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
+.err{color:#ff6b6b;font-size:14px;margin-top:10px;text-align:center}
+.done{text-align:center;padding:30px 16px}
+.done .ck{font-size:54px;color:var(--ok)}
+.ft{text-align:center;color:var(--dim);font-size:12px;padding:20px 16px 0}
+</style>
+</head>
+<body>
+<header>
+  <img src="/images/logo.png" alt="MU-MU GRILL">
+  <p>Hamburguesas artesanales · Pide online</p>
+</header>
+<div id="closed"></div>
+<nav id="nav"></nav>
+<main id="menu"></main>
+<div class="ft">Entrega a domicilio 3 € · Gratis a partir de 18 € · Recogida en local</div>
+
+<div id="bar"><button id="barBtn"><span id="barCount"></span><span>Ver pedido</span><span id="barTotal"></span></button></div>
+<div class="overlay" id="ov"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const SERVER_URL = location.protocol.startsWith('http') ? '' : 'https://mumu-server-production.up.railway.app';
+
+// ---------- Menú (los nombres deben resolver en catalog.js) ----------
+const BURGER_MODS = ['Sin cebolla','Sin pepinillos','Sin tomate','Sin lechuga','Sin salsa','Sin queso','Sin bacon'];
+const MEAT = ['Poco hecha','Al punto','Bien hecha'];
+const BURGER_EXTRAS = [['Extra Bacon',1],['Extra Cheddar',1],['Extra Mozzarella',1],['Extra Cebolla Caramelizada',1],['Extra Rulo de Cabra',1],['Extra Pulled Pork',2],['Extra Salsa Cereza',1]];
+const FRIES_SWAP = [['Cambio Patatas Gajo',.5]];
+const B = (name,price,img,tag,ing,mods,meat=true) => ({name,price,img,desc:tag,ing,mods,meat,extras:[...BURGER_EXTRAS,...FRIES_SWAP]});
+const P = (name,price,desc) => ({name,price,desc,mods:['Sin salsa de tomate'],extras:[]});
+const D = (name,price) => ({name,price,desc:'',mods:[],extras:[]});
+
+const MENU = [
+ {cat:'Hamburguesas',items:[
+  B('Mr Classic',12,'mr_classic','El clásico de siempre, sin disfraces.','Pan brioche, carne de vaca, lechuga, tomate, cebolla, pepinillo, ketchup, mostaza y patatas fritas bastón.',['Sin cebolla','Sin pepinillos','Sin tomate','Sin lechuga','Sin ketchup','Sin mostaza']),
+  B('Cheddar Bacon',12.5,'cheddar_bacon','Cheddar fundido y bacon crujiente: dúo imbatible.','Pan brioche, carne de vaca, lechuga, tomate, cebolla, pepinillo, cheddar, bacon, ketchup, mostaza y patatas fritas bastón.',['Sin queso','Sin bacon','Sin cebolla','Sin pepinillos','Sin tomate','Sin lechuga','Sin ketchup','Sin mostaza']),
+  B('Crunchy Chicken',11.5,'crunchy_chicken','Pollo dorado, crujiente y cremoso a la vez.','Pan brioche, hamburguesa de pollo, lechuga, tomate, salsa ranch y patatas fritas bastón.',['Sin tomate','Sin lechuga','Sin salsa'],false),
+  B('Smoked BBQ',14,'smoked_bbq','Ahumada, intensa y con mucho carácter.','Pan brioche, carne de vaca, cebolla salteada, cheddar, bacon, cebolla frita crujiente, salsa smoked BBQ y patatas fritas bastón.',['Sin cebolla','Sin queso','Sin bacon','Sin salsa']),
+  B('Cosa Nostra',14,'cosa_nostra','Una oferta que no podrás rechazar.','Pan brioche, carne de vaca, rúcula, tomate, mozzarella, tomate seco, mayonesa con pesto y patatas fritas bastón.',['Sin rúcula','Sin tomate','Sin tomate seco','Sin queso','Sin salsa']),
+  B('El Pastor',14,'el_pastor','Dulce, cremosa y con alma de queso de cabra.','Pan brioche, carne de vaca, tomate, queso rulo de cabra, cebolla caramelizada, mayonesa de miel y mostaza y patatas fritas bastón.',['Sin tomate','Sin queso','Sin cebolla','Sin salsa']),
+  B('Pantera Negra',14,'pantera_negra','Pan negro, sabor sin sombras.','Pan brioche negro, carne de vaca, cheddar, bacon, mayonesa con parmesano, salsa de cereza y patatas fritas bastón.',['Sin queso','Sin bacon','Sin salsa de cereza','Sin salsa']),
+  B('Pulled Pork',14,'pulled_pork_burger','Cerdo desmenuzado, horas de cocción en cada bocado.','Pan brioche, pulled pork, ensalada de col, bacon, cebolla al vinagre, spicy mayo con chipotle y patatas fritas bastón.',['Sin ensalada de col','Sin bacon','Sin cebolla','Sin salsa'],false),
+  B('Bosque Azul',14,'bosque_azul','Un paseo por el bosque: setas, bacon y queso azul.','Pan brioche, carne de vaca, cebolla caramelizada, bacon, salsa de champiñones y queso azul y patatas fritas bastón.',['Sin cebolla','Sin bacon','Sin champiñones','Sin queso azul']),
+ ]},
+ {cat:'Complementos',items:[
+  {name:'Alitas de Pollo Fritas',price:8,desc:'Alitas fritas sin salsa.',mods:[],extras:[]},
+  {name:'Alitas de Pollo en Salsa BBQ',price:8,img:'alitas_bbq',desc:'Glaseadas con salsa BBQ y sésamo.',mods:[],extras:[]},
+  {name:'Alitas de Pollo en Salsa BBQ Picante',price:8,img:'alitas_bbq_picante',desc:'BBQ con un toque picante.',mods:[],extras:[]},
+  {name:'Alitas de Pollo en Salsa Buffalo',price:8,img:'alitas_buffalo',desc:'Clásicas buffalo.',mods:[],extras:[]},
+  {name:'Patatas Fritas',price:3.5,desc:'',mods:[],extras:[['Extra Salsa Patatas',.5]]},
+  {name:'Patatas Fritas de Gajo',price:4,desc:'',mods:[],extras:[['Extra Salsa Patatas',.5]]},
+ ]},
+ {cat:'Bebidas',items:[
+  D('Coca-Cola Classic',2.5),D('Coca-Cola Zero',2.5),D('Fanta Naranja',2.5),D('Fanta Limón',2.5),
+  D('Aquarius Limón',2.5),D('Aquarius Naranja',2.5),D('Nestea',2.5),D('Agua sin gas',1),
+  D('Mahou 5 Estrellas',2.5),D('Mahou sin alcohol',2.5),
+ ]},
+ {cat:'Postres',items:[D('Tartaleta de Manzana',4.9),D('Brownie con Nueces',4.5)]},
+];
+MENU.forEach(c=>c.items.forEach(i=>{i.cat=c.cat}));
+
+// ---------- Estado ----------
+let cart=[], serviceType='delivery', payment='cash', orderId=null, sending=false;
+const $=id=>document.getElementById(id);
+const eur=n=>n.toFixed(2).replace('.',',')+' €';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lineUnit=l=>l.item.price+l.extras.reduce((s,e)=>s+e[1],0);
+const subtotal=()=>cart.reduce((s,l)=>s+lineUnit(l)*l.qty,0);
+const fee=()=>serviceType==='delivery'&&subtotal()>0&&subtotal()<18?3:0;
+const total=()=>subtotal()+fee();
+
+// ---------- Render menú ----------
+function render(){
+  $('nav').innerHTML=MENU.map((c,i)=>`<button data-c="${i}">${c.cat}</button>`).join('');
+  $('menu').innerHTML=MENU.map((c,ci)=>`<h2 class="cat" id="cat${ci}">${c.cat}</h2><div class="grid">${c.items.map((it,ii)=>`
+    <button class="card" data-c="${ci}" data-i="${ii}">
+      ${it.img?`<div class="ph" style="background-image:url('/images/${it.img}.jpg')"></div>`:`<div class="ph none"><img src="/images/logo.png" alt=""></div>`}
+      <div class="bd"><div class="nm">${esc(it.name)}</div>${it.desc?`<div class="ds">${esc(it.desc)}</div>`:'<div class="ds"></div>'}
+      <div class="pr"><b>${eur(it.price)}</b><span class="plus">+</span></div></div>
+    </button>`).join('')}</div>`).join('');
+  $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const el=$('cat'+b.dataset.c);window.scrollTo({top:el.getBoundingClientRect().top+scrollY-62,behavior:'smooth'});
+    $('nav').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  $('menu').querySelectorAll('.card').forEach(b=>b.onclick=()=>openItem(MENU[b.dataset.c].items[b.dataset.i]));
+}
+
+// ---------- Sheet ----------
+function openSheet(html){$('sheet').innerHTML=html;$('ov').classList.add('open');requestAnimationFrame(()=>$('sheet').classList.add('open'));$('sheet').scrollTop=0}
+function closeSheet(){$('sheet').classList.remove('open');$('ov').classList.remove('open')}
+$('ov').onclick=closeSheet;
+
+function openItem(it){
+  let qty=1,selMeat=-1;const selM=new Set(),selE=new Set();
+  const hero=it.img?`<div class="hero" style="background-image:url('/images/${it.img}.jpg')">`:`<div class="hero" style="background:#111 url('/images/logo.png') center/35% no-repeat">`;
+  const draw=()=>{
+    const ex=[...selE].map(i=>it.extras[i]);
+    const unit=it.price+ex.reduce((s,e)=>s+e[1],0);
+    $('sheet').innerHTML=`${hero}<button class="x" id="cx">×</button></div><div class="in">
+      <h3>${esc(it.name)}</h3><p class="sub">${it.ing?`<i style="color:var(--text)">${esc(it.desc)}</i><br>${esc(it.ing)}`:esc(it.desc||'')}</p>
+      ${it.meat?`<h4>Punto de la carne</h4><div class="chips">${MEAT.map((m,i)=>`<button class="chip ${selMeat===i?'on':''}" data-k="${i}">${m}</button>`).join('')}</div>`:''}
+      ${it.mods.length?`<h4>Modificaciones (gratis)</h4><div class="chips">${it.mods.map((m,i)=>`<button class="chip ${selM.has(i)?'on':''}" data-m="${i}">${esc(m)}</button>`).join('')}</div>`:''}
+      ${it.extras.length?`<h4>Extras</h4><div class="chips">${it.extras.map((e,i)=>`<button class="chip ${selE.has(i)?'on':''}" data-e="${i}">${esc(e[0].replace(/^Extra /,'+ '))} <small>+${eur(e[1])}</small></button>`).join('')}</div>`:''}
+      <h4>Comentario (opcional)</h4><input type="text" id="inote" placeholder="Alergias, preferencias…" maxlength="80" value="${esc(draw.note||'')}">
+      <div class="row" style="justify-content:space-between;margin-top:20px"><div class="qty"><button id="qm">−</button><span>${qty}</span><button id="qp">+</button></div>
+      <div style="flex:1"><button class="cta" id="add">Añadir · ${eur(unit*qty)}</button></div></div></div>`;
+    $('cx').onclick=closeSheet;
+    $('inote').oninput=e=>{draw.note=e.target.value};
+    $('sheet').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const i=+b.dataset.k;selMeat=selMeat===i?-1:i;draw()});
+    $('sheet').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const i=+b.dataset.m;selM.has(i)?selM.delete(i):selM.add(i);draw()});
+    $('sheet').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{const i=+b.dataset.e;selE.has(i)?selE.delete(i):selE.add(i);draw()});
+    $('qm').onclick=()=>{if(qty>1){qty--;draw()}};
+    $('qp').onclick=()=>{if(qty<20){qty++;draw()}};
+    $('add').onclick=()=>{
+      const mods=[...(selMeat>=0?[MEAT[selMeat]]:[]),...[...selM].map(i=>it.mods[i])];const n=(draw.note||'').trim();if(n)mods.push(n);
+      cart.push({item:it,qty,mods,extras:ex});draw.note='';closeSheet();updateBar();
+    };
+  };
+  draw.note='';draw();
+  $('ov').classList.add('open');requestAnimationFrame(()=>$('sheet').classList.add('open'));$('sheet').scrollTop=0;
+}
+
+// ---------- Barra y carrito ----------
+function updateBar(){
+  const n=cart.reduce((s,l)=>s+l.qty,0);
+  $('bar').style.display=n?'block':'none';
+  $('barCount').textContent=n+(n===1?' producto':' productos');
+  $('barTotal').textContent=eur(subtotal());
+}
+$('barBtn').onclick=openCart;
+
+function openCart(){
+  if(!cart.length){closeSheet();return}
+  const lines=cart.map((l,i)=>`<div class="ln"><div class="t"><b>${l.qty}× ${esc(l.item.name)}</b>
+    ${(l.mods.length||l.extras.length)?`<small>${esc([...l.mods,...l.extras.map(e=>e[0])].join(', '))}</small>`:''}
+    <button class="rm" data-r="${i}">Quitar</button></div><div>${eur(lineUnit(l)*l.qty)}</div></div>`).join('');
+  const needAddr=serviceType==='delivery';
+  const st=openCart.s||(openCart.s={name:'',phone:'',addr:'',notes:''});
+  openSheet(`<div class="in" style="padding-top:20px"><div class="row" style="justify-content:space-between"><h3>Tu pedido</h3><button class="chip" id="cc">Cerrar</button></div>
+    ${lines}
+    <h4>Tipo de pedido</h4><div class="chips"><button class="chip ${serviceType==='delivery'?'on':''}" data-s="delivery">A domicilio</button><button class="chip ${serviceType==='pickup'?'on':''}" data-s="pickup">Recogida en local</button></div>
+    <label class="l">Nombre</label><input type="text" id="fn" value="${esc(st.name)}" autocomplete="name">
+    <label class="l">Teléfono</label><input type="tel" id="fp" value="${esc(st.phone)}" autocomplete="tel">
+    ${needAddr?`<label class="l">Dirección de entrega (calle, número, piso)</label><textarea id="fa" autocomplete="street-address">${esc(st.addr)}</textarea>`:''}
+    <label class="l">Notas (opcional)</label><input type="text" id="fo" value="${esc(st.notes)}" placeholder="Timbre, indicaciones…">
+    <h4>Pago (al recibir / recoger)</h4><div class="chips"><button class="chip ${payment==='cash'?'on':''}" data-p="cash">Efectivo</button><button class="chip ${payment==='card'?'on':''}" data-p="card">Tarjeta</button></div>
+    <div style="margin-top:18px"><div class="sum"><span>Subtotal</span><span>${eur(subtotal())}</span></div>
+    ${serviceType==='delivery'?`<div class="sum"><span>Envío${subtotal()>=18?' (gratis)':''}</span><span>${eur(fee())}</span></div>`:''}
+    <div class="sum tot"><span>Total</span><span>${eur(total())}</span></div></div>
+    <button class="cta" id="send" style="margin-top:16px">Enviar pedido</button><button class="cta sec" id="more">Añadir más productos</button>
+    <div class="err" id="err"></div></div>`);
+  const save=()=>{const g=id=>$(id)?$(id).value:'';st.name=g('fn');st.phone=g('fp');st.addr=g('fa')||st.addr;st.notes=g('fo')};
+  $('cc').onclick=closeSheet;$('more').onclick=closeSheet;
+  $('sheet').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{save();cart.splice(+b.dataset.r,1);updateBar();openCart()});
+  $('sheet').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{save();serviceType=b.dataset.s;openCart()});
+  $('sheet').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{save();payment=b.dataset.p;openCart()});
+  $('send').onclick=()=>{save();submit()};
+}
+
+async function submit(){
+  if(sending)return;
+  const st=openCart.s,err=$('err');err.textContent='';
+  if(!st.name.trim())return err.textContent='Escribe tu nombre.';
+  if(!/^[+\d][\d\s-]{7,}$/.test(st.phone.trim()))return err.textContent='Escribe un teléfono válido.';
+  if(serviceType==='delivery'&&!st.addr.trim())return err.textContent='Escribe la dirección de entrega.';
+  if(!orderId)orderId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
+  sending=true;$('send').disabled=true;$('send').textContent='Enviando…';
+  try{
+    const r=await fetch(SERVER_URL+'/public-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      order_id:orderId,service_type:serviceType,payment_method:payment,
+      customer_name:st.name.trim(),customer_phone:st.phone.trim(),
+      delivery_address:serviceType==='delivery'?st.addr.trim():null,delivery_notes:st.notes.trim()||null,
+      items:cart.map(l=>({name:l.item.name,quantity:l.qty,modifications:l.mods,extras:l.extras.map(e=>e[0])}))
+    })});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok){throw new Error(d.message||('Error '+r.status))}
+    const t=d.total;cart=[];orderId=null;updateBar();
+    openSheet(`<div class="done"><div class="ck">✓</div><h3>¡Pedido recibido!</h3>
+      <p>Total confirmado: <b>${eur(Number(t))}</b></p>
+      <p style="color:var(--dim);font-size:14px">${serviceType==='delivery'?'Lo estamos preparando y te lo llevamos lo antes posible.':'Te avisamos cuando esté listo para recoger.'}</p>
+      <button class="cta" id="ok" style="margin-top:14px">Hacer otro pedido</button></div>`);
+    $('ok').onclick=closeSheet;
+  }catch(e){
+    sending=false;$('send').disabled=false;$('send').textContent='Enviar pedido';
+    err.textContent=(e.message&&e.message!=='Failed to fetch')?e.message:'No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.';
+  }
+  sending=false;
+}
+
+// ---------- Horario ----------
+fetch(SERVER_URL+'/tools/check-hours').then(r=>r.json()).then(h=>{
+  if(!h.is_open){const c=$('closed');c.style.display='block';
+    c.textContent='Ahora mismo estamos cerrados'+(h.hours_today?'. Horario de hoy: '+h.hours_today:'')+'. Puedes ver la carta, pero no enviar pedidos.';}
+}).catch(()=>{});
+
+render();
+</script>
+</body>
+</html>
