@@ -72,3 +72,4 @@ log del servidor — todavía no lo envía a Loyverse. Para completarlo hace fal
 
 En cuanto tengas esos tres datos, dímelo y completo la función que crea el recibo en
 Loyverse (`POST https://api.loyverse.com/v1.0/receipts`).
+
