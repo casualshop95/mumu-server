@@ -234,8 +234,13 @@ app.post('/webhook/order-confirmed', async (req, res) => {
   }
 });
 
+// Página principal: según el dominio se muestra la carta de cada marca.
+// (HOT SPOT: añadir aquí su dominio cuando esté comprado)
+const PIZZA_HOSTS = ['hotspotpizza.es', 'www.hotspotpizza.es'];
 app.get('/', (req, res) => {
-  res.send('MU-MU GRILL order server is running.');
+  const host = String(req.hostname || '').toLowerCase();
+  const page = PIZZA_HOSTS.includes(host) ? 'pizza-order.html' : 'public-order.html';
+  res.sendFile(page, { root: 'public' });
 });
 
 // -----------------------------------------------------------------------
