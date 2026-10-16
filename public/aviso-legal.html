@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Aviso legal — MARCA</title>
+<link rel="icon" type="image/png" sizes="48x48" href="images/fav-mumu-48.png">
+<style>
+:root{--bg:#000;--panel:#161514;--line:#2a2826;--text:#f5f2ee;--dim:#a29d96;--acc:#ff1a1f}
+body.hs{--acc:#f4f4f4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.w{max-width:760px;margin:0 auto;padding:24px 18px 60px}
+a{color:var(--acc)}
+h1{font-size:26px;margin:18px 0 4px}h2{font-size:18px;margin:28px 0 6px;color:var(--acc)}
+p,li{color:var(--text)}.d{color:var(--dim);font-size:14px}
+.top{display:flex;align-items:center;gap:12px}.top img{height:56px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+</style></head><body><div class="w"><div class="top"><img id="logo" src="images/logo.png" alt=""><a href="/">← Volver a la carta</a></div>
+<h1>Aviso legal</h1>
+<p class="d">Información general conforme al artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE).</p>
+
+<h2>1. Titular del sitio web</h2>
+<div class="box">
+<p style="margin:0"><b>Titular:</b> VITALII LIAKHOVSKYI<br>
+<b>NIE:</b> Y6295755W<br>
+<b>Nombre comercial:</b> <span data-brand>MU-MU GRILL</span><br>
+<b>Domicilio del establecimiento:</b> Calle Huerta de Villaverde 10, 28021 Madrid (España)<br>
+<b>Correo electrónico:</b> <a href="mailto:casualshop95@gmail.com">casualshop95@gmail.com</a><br>
+<b>Sitio web:</b> <span data-domain>www.mumugrill.es</span></p>
+</div>
+
+<h2>2. Objeto</h2>
+<p>Este sitio web permite consultar la carta de <span data-brand>MU-MU GRILL</span> y realizar pedidos de comida para entrega a domicilio o recogida en el local. El uso del sitio implica la aceptación de este aviso legal.</p>
+
+<h2>3. Pedidos y pago</h2>
+<p>Los precios incluyen IVA. El pago se realiza al recibir o recoger el pedido, en efectivo o con tarjeta; a través de esta web no se cobra ni se recogen datos bancarios. El servicio de entrega a domicilio está limitado a los códigos postales 28021 y 28041, con un coste de envío de 3 € (gratuito a partir de 18 € de pedido). El pedido solo se considera aceptado cuando el establecimiento lo confirma; podemos rechazarlo, por ejemplo, fuera del horario de servicio o por falta de existencias.</p>
+
+<h2>4. Propiedad intelectual</h2>
+<p>Los textos, fotografías, logotipos y el diseño de este sitio son propiedad del titular o se usan con autorización. No está permitida su reproducción o uso comercial sin consentimiento previo.</p>
+
+<h2>5. Responsabilidad</h2>
+<p>Hacemos lo posible para que la información de la carta sea correcta y esté actualizada, pero pueden producirse errores o cambios de precio o disponibilidad. Los alérgenos de cada plato se pueden consultar en el local o solicitar por teléfono antes de realizar el pedido.</p>
+
+<h2>6. Protección de datos</h2>
+<p>El tratamiento de los datos personales se explica en nuestra <a data-x="privacidad.html" href="privacidad.html">Política de privacidad</a>.</p>
+
+<h2>7. Legislación y jurisdicción</h2>
+<p>Este aviso se rige por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan conforme a la normativa de consumidores y usuarios.</p>
+<p class="d" style="margin-top:36px">Última actualización: octubre de 2026.</p></div><script>
+(function(){
+  var hs=/hotspot/i.test(location.hostname)||/[?&]b=hotspot/.test(location.search);
+  var B=hs?{n:'HOT SPOT',d:'hotspotpizza.es',logo:'images/hotspot-logo.png'}:{n:'MU-MU GRILL',d:'mumugrill.es',logo:'images/logo.png'};
+  if(hs)document.body.classList.add('hs');
+  document.querySelectorAll('[data-brand]').forEach(function(e){e.textContent=B.n});
+  document.querySelectorAll('[data-domain]').forEach(function(e){e.textContent='www.'+B.d});
+  var l=document.getElementById('logo');if(l){l.src=B.logo;l.alt=B.n}
+  var i=document.querySelector('link[rel=icon]');if(i&&hs)i.href='images/fav-hotspot-48.png';
+  document.title=document.title.replace('MARCA',B.n);
+  var q=hs?'?b=hotspot':'';document.querySelectorAll('a[data-x]').forEach(function(a){a.href=a.getAttribute('data-x')+q});
+})();
+</script></body></html>
